@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Did.Walt.Core\Did.Walt.Core.csproj" />
+      <ProjectReference Include="..\..\Did.WaltId.Issuer\Did.WaltId.Issuer.csproj" />
+      <ProjectReference Include="..\..\Did.WaltId.Verifier\Did.WaltId.Verifier.csproj" />
+      <ProjectReference Include="..\Engine\Engine.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+        <HintPath>..\..\..\..\Users\burne\.dotnet\shared\Microsoft.AspNetCore.App\10.0.3\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+        <HintPath>..\..\..\..\Users\burne\.dotnet\shared\Microsoft.AspNetCore.App\10.0.3\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.7" />
+      <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,58 @@
+name: rabbitmq-lgtm-stack
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq_logs:/var/log/rabbitmq
+    command: >
+      bash -c "
+      rabbitmq-plugins enable --quiet rabbitmq_prometheus &&
+      rabbitmq-server
+      "
+
+  mimir:
+    image: grafana/mimir:latest
+    container_name: mimir
+    command: ["--config.file=/etc/mimir.yaml"]
+    volumes:
+      - ./mimir.yaml:/etc/mimir.yaml
+    ports:
+      - "9009:9009"
+
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: lgtm
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+      - "3100:3100"
+      - "3200:3200"
+      - "4040:4040"
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/lgtm/prometheus
+      - ./grafana/provisioning:/etc/lgtm/grafana/provisioning
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml
+      - rabbitmq_logs:/var/log/rabbitmq
+    depends_on:
+      - rabbitmq
+      - lgtm
+    command: ["--config=/etc/otelcol/config.yaml"]
+
+volumes:
+  rabbitmq_logs:
