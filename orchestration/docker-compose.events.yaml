@@ -1,0 +1,107 @@
+name: events-stack
+
+services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    user: "0"
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      # Enable KRaft mode (no ZooKeeper)
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_DIRS: /opt/kafka/data/kraft-combined-logs
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+    volumes:
+      - kafka_data:/opt/kafka/data/kraft-combined-logs
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+  zookeeper:
+    image: zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper:2888:3888;2181
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_log:/datalog
+
+  pinot-controller:
+    image: apachepinot/pinot:latest
+    container_name: pinot-controller
+    ports:
+      - "9000:9000"
+    depends_on:
+      - zookeeper
+    environment:
+      PINOT_ZK_ADDRESS: zookeeper:2181
+    volumes:
+      - ./pinot/data:/data
+      - ./pinot/config:/config
+    command: "StartController -zkAddress zookeeper:2181"
+
+  pinot-broker:
+    image: apachepinot/pinot:latest
+    container_name: pinot-broker
+    command: "StartBroker -zkAddress zookeeper:2181"
+    ports:
+      - "8099:8099"
+    depends_on:
+      - pinot-controller
+    environment:
+      PINOT_ZK_ADDRESS: zookeeper:2181
+      PINOT_CONTROLLER_HOST: pinot-controller
+      PINOT_CONTROLLER_PORT: 9000
+
+  pinot-server:
+    image: apachepinot/pinot:latest
+    container_name: pinot-server
+    command: "StartServer -zkAddress zookeeper:2181"
+    ports:
+      - "8098:8098"
+    depends_on:
+      - pinot-broker
+    environment:
+      PINOT_ZK_ADDRESS: zookeeper:2181
+      PINOT_CONTROLLER_HOST: pinot-controller
+      PINOT_CONTROLLER_PORT: 9000
+
+  pinot-init:
+    image: apachepinot/pinot:latest
+    container_name: pinot-init
+    depends_on:
+      - pinot-server
+    volumes:
+      - ./pinot/config:/config
+    entrypoint: ["sh", "-c"]
+    command: ["sleep 60 && /opt/pinot/bin/pinot-admin.sh AddSchema -schemaFile /config/messages-schema.json -controllerHost pinot-controller -controllerPort 9000 -exec || true && /opt/pinot/bin/pinot-admin.sh AddTable -tableConfigFile /config/messages-table.json -schemaFile /config/messages-schema.json -controllerHost pinot-controller -controllerPort 9000 -exec || true && tail -f /dev/null"]
+
+volumes:
+  kafka_data:
+  zookeeper_data:
+  zookeeper_log:
+  pinot_data:

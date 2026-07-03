@@ -11,6 +11,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventBus.Rabbit", "src\Even
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundation", "src\Foundation\Foundation.csproj", "{08839E2D-6C3E-41CE-9689-7C38A6AAE31C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messages.Kafka", "src\Messages.Kafka\Messages.Kafka.csproj", "{BDF3982D-4035-4508-9209-2DDC4553DD5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messages.Kafka.Tests", "test\Messages.Kafka.Tests\Messages.Kafka.Tests.csproj", "{B29A859D-3F33-49AA-BD75-5EFBCBA75BB9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Tests", "test\Core.Tests\Core.Tests.csproj", "{B7F1E4AE-383A-4853-AFE0-48C53E45521D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +42,17 @@ Global
 		{08839E2D-6C3E-41CE-9689-7C38A6AAE31C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08839E2D-6C3E-41CE-9689-7C38A6AAE31C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08839E2D-6C3E-41CE-9689-7C38A6AAE31C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDF3982D-4035-4508-9209-2DDC4553DD5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDF3982D-4035-4508-9209-2DDC4553DD5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDF3982D-4035-4508-9209-2DDC4553DD5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDF3982D-4035-4508-9209-2DDC4553DD5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B29A859D-3F33-49AA-BD75-5EFBCBA75BB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B29A859D-3F33-49AA-BD75-5EFBCBA75BB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B29A859D-3F33-49AA-BD75-5EFBCBA75BB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B29A859D-3F33-49AA-BD75-5EFBCBA75BB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7F1E4AE-383A-4853-AFE0-48C53E45521D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7F1E4AE-383A-4853-AFE0-48C53E45521D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7F1E4AE-383A-4853-AFE0-48C53E45521D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7F1E4AE-383A-4853-AFE0-48C53E45521D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

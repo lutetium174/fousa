@@ -9,7 +9,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\EventBus.Rabbit\EventBus.Rabbit.csproj" />
+    <ProjectReference Include="..\Messages.Kafka\Messages.Kafka.csproj" />
     <ProjectReference Include="..\Foundation\Foundation.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="10.0.9"/>
   </ItemGroup>
 
 </Project>

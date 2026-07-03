@@ -1,0 +1,31 @@
+﻿using System.Text;
+using System.Text.Json;
+using Core;
+using Core.Broker;
+
+namespace Messages.Kafka;
+
+public class MessagesProducer(ProducerFactory factory) : IMessagesProducer
+{
+    public async Task Write(Message message, CancellationToken cancellationToken)
+    {
+        var id = Guid.NewGuid();
+
+        using var producer = factory.CreateProducer();
+        await producer.ProduceAsync(
+            message.Topic ?? "messages",
+            new()
+            {
+                Key = Encoding.UTF8.GetBytes(id.ToString()),
+                Value = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+                {
+                    Id = id,
+                    Content = message.Content,
+                    Sender = message.Sender,
+                    Timestamp = DateTime.UtcNow,
+                    RoutingKey = "default"
+                }))
+            },
+            cancellationToken);
+    }
+}

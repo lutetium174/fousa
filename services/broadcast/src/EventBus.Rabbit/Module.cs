@@ -1,4 +1,5 @@
-﻿using Foundation;
+﻿using Core;
+using Foundation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -6,18 +7,23 @@ using RabbitMQ.Client;
 
 namespace EventBus.Rabbit;
 
-public class Module : IConfigurableModule
+public class Module : IModule
 {
-    public IServiceCollection Register(IServiceCollection services, IConfiguration configuration)
+    public void Register(IServiceCollection services, IConfiguration configuration)
         => services
             .Configure<RabbitOptions>(_ => configuration.GetSection(nameof(RabbitMQ)))
-            .AddTransient<IEventBus>()
-            .AddKeyedSingleton<ConnectionFactory>(
+            .AddTransient<IMessageBroker, EventBus>()
+            .AddKeyedSingleton<IConnectionFactory>(
                 nameof(RabbitMQ),
                 (context, _) =>
                 {
-                    var options = context.GetRequiredService<IOptions<RabbitOptions>>().Value;
-                    return new();
+                    var options =  context.GetRequiredService<IOptions<RabbitOptions>>().Value;
+                    return new ConnectionFactory
+                    {
+                        HostName = options.Host,
+                        UserName = options.Username,
+                        Password = options.Password
+                    };
                 });
 }
 

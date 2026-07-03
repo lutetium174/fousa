@@ -1,0 +1,22 @@
+info:
+  name: Write Fuse
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5283/fuse/send
+  body:
+    type: json
+    data: |-
+      {
+        "sender": "7655d018-fe75-4706-a0db-0769c44fa206",
+        "content": "allo guvner"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

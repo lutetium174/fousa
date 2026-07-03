@@ -1,30 +1,19 @@
 ﻿using System.Text;
 using System.Text.Json;
+using Core;
+using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace EventBus.Rabbit;
 
-public class EventBus
+public class EventBus([FromKeyedServices(nameof(RabbitMQ))]IConnectionFactory factory): IMessageBroker
 {
-    private IConnectionFactory? _factory;
     private IChannel? _channel;
-
-    private EventBus(IConnectionFactory? factory)
-    {
-        _factory = factory;
-    }
-
+    
     public async Task<IChannel> CreateChannel(string host, string user, string pass)
     {
-        _factory = new ConnectionFactory
-        {
-            HostName = host,
-            UserName = user,
-            Password = pass
-        };
-        
-        var connection = await _factory.CreateConnectionAsync();
+        var connection = await factory.CreateConnectionAsync();
         _channel = await connection.CreateChannelAsync();
 
         await _channel.ExchangeDeclareAsync("event-bus", "topic", durable: true);
@@ -57,8 +46,4 @@ public class EventBus
 
         await _channel.BasicConsumeAsync(queue, true, consumer);
     }
-}
-
-public class DomainEvent
-{
 }

@@ -1,15 +1,25 @@
 using Core;
+using Core.Broker;
 using Foundation;
+using Microsoft.AspNetCore.Mvc;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication
+    .CreateBuilder(args)
+    .AddModule<EventBus.Rabbit.Module>()
+    .AddModule<Messages.Kafka.Module>();
+
 var app = builder.Build();
 
-builder.Services.AddModule<EventBus.Rabbit.Module>(builder.Configuration);
-
-app.MapPost("/fuses", (MessagesFilter filter, IMessagesService messagesService) => messagesService.Lookup(filter));
-app.MapPost("/fuse/send", async (string message, IMessagesService messagesService) => {
-    await messagesService.Write(message);
-});
+app.MapPost("/fuses", (
+        [FromServices] IMessagesQuerier messagesService,
+        MessagesFilter filter,
+        CancellationToken cancellationToken) 
+    => messagesService.Lookup(filter, cancellationToken));
+app.MapPost("/fuse/send", (
+        [FromServices] IMessagesProducer messagesService,
+        Message message,
+        CancellationToken cancellationToken) 
+    => messagesService.Write(message, cancellationToken));
 
 app.Run();
 
