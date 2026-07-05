@@ -13,7 +13,7 @@ public class Module : IModule
     {
         services
             .Configure<KafkaOptions>(configuration.GetSection(KafkaOptions.Kafka));
-        
+
         services
             .Configure<PinotOptions>(configuration.GetSection(PinotOptions.Pinot))
             .AddHttpClient(PinotOptions.Pinot,
@@ -22,12 +22,14 @@ public class Module : IModule
                     var options = provider.GetRequiredService<IOptions<PinotOptions>>().Value;
                     client.BaseAddress = new(options.ControllerUri);
                 });
-        
+
         services
             .AddSingleton<ProducerFactory>()
             .AddSingleton<IMessageBroker, MessageBroker>()
-            .AddSingleton<IMessagesQuerier, MessageService>()
             .AddSingleton<IMessagesProducer, MessagesProducer>();
+            
+        services
+            .AddTransient<IMessagesQuerier, MessageService>();
     }
 }
 

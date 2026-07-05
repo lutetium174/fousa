@@ -1,0 +1,14 @@
+info:
+  name: List AI Models
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:5050/engines/v1/models
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

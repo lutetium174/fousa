@@ -100,6 +100,46 @@ services:
     entrypoint: ["sh", "-c"]
     command: ["sleep 60 && /opt/pinot/bin/pinot-admin.sh AddSchema -schemaFile /config/messages-schema.json -controllerHost pinot-controller -controllerPort 9000 -exec || true && /opt/pinot/bin/pinot-admin.sh AddTable -tableConfigFile /config/messages-table.json -schemaFile /config/messages-schema.json -controllerHost pinot-controller -controllerPort 9000 -exec || true && tail -f /dev/null"]
 
+  # Schema Registry - required for ksqlDB
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    container_name: schema-registry
+    ports:
+      - "8085:8081"
+    depends_on:
+      - kafka
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+  # ksqlDB Server - Kafka Streams SQL engine
+  ksql-server:
+    image: confluentinc/cp-ksql-server:latest
+    container_name: ksql-server
+    ports:
+      - "8088:8088"
+    depends_on:
+      - kafka
+      - schema-registry
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: kafka:9092
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KSQL_KSQL_SERVICE_ID: ksql_service
+      KSQL_KSQL_HIDDEN_TOPICS: ^_.*
+
+  # ksqlDB CLI - for interactive queries
+  ksql-cli:
+    image: confluentinc/cp-ksql-cli:latest
+    container_name: ksql-cli
+    depends_on:
+      - ksql-server
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sleep infinity"]
+    volumes:
+      - ./kafka/ksql:/ksql-scripts
+
 volumes:
   kafka_data:
   zookeeper_data:

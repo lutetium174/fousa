@@ -18,7 +18,6 @@ public class MessageService(
 {
     private readonly KafkaOptions _kafkaOptions = kafkaOptions.Value;
     private readonly PinotOptions _pinotOptions = pinotOptions.Value;
-    private readonly HttpClient _httpClient = httpClient ?? new HttpClient();
     
     private IConsumer<byte[], byte[]> CreateConsumer()
     {
@@ -101,7 +100,7 @@ public class MessageService(
         CancellationToken cancellationToken)
     {
         var queryUrl = BuildPinotQueryUrl();
-        var response = await _httpClient.PostAsJsonAsync(
+        var response = await httpClient.PostAsJsonAsync(
             queryUrl,
             new
             {
@@ -229,7 +228,6 @@ public class MessageService(
 
     public void Dispose()
     {
-        _httpClient.Dispose();
         httpClient.Dispose();
     }
 }

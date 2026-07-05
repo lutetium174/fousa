@@ -1,0 +1,24 @@
+info:
+  name: Mistral Chat
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5050/engines/v1/chat/completions
+  body:
+    type: json
+    data: |-
+      {
+          "model": "mistral",
+          "messages": [
+            {"role": "user", "content": "Translate into French: Hello World"}
+          ]
+        }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
