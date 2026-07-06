@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Messages.Kafka;
 
-public class MessageService(
+public class MessagesQuerier(
     IOptions<KafkaOptions> kafkaOptions,
     IOptions<PinotOptions> pinotOptions,
     HttpClient httpClient)

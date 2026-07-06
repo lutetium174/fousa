@@ -8,6 +8,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundation", "src\Foundatio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "src\Core\Core.csproj", "{6FB7E720-7FCF-4991-8037-4FCBAEC8ACB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messages.Kafka", "src\Messages.Kafka\Messages.Kafka.csproj", "{1FFB1B11-4318-4F36-BCFB-54C1FA2A7484}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messages.Abstractions", "src\Messages.Abstractions\Messages.Abstractions.csproj", "{A83B231B-A11C-4F33-9B96-A795F166D8AC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{6FB7E720-7FCF-4991-8037-4FCBAEC8ACB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6FB7E720-7FCF-4991-8037-4FCBAEC8ACB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6FB7E720-7FCF-4991-8037-4FCBAEC8ACB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FFB1B11-4318-4F36-BCFB-54C1FA2A7484}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FFB1B11-4318-4F36-BCFB-54C1FA2A7484}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FFB1B11-4318-4F36-BCFB-54C1FA2A7484}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FFB1B11-4318-4F36-BCFB-54C1FA2A7484}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A83B231B-A11C-4F33-9B96-A795F166D8AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A83B231B-A11C-4F33-9B96-A795F166D8AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A83B231B-A11C-4F33-9B96-A795F166D8AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A83B231B-A11C-4F33-9B96-A795F166D8AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

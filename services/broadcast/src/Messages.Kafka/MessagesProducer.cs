@@ -16,15 +16,15 @@ public class MessagesProducer(ProducerFactory factory) : IMessagesProducer
             message.Topic ?? "messages",
             new()
             {
-                Key = Encoding.UTF8.GetBytes(id.ToString()),
-                Value = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+                Key = id.ToString(),
+                Value = JsonSerializer.Serialize(new
                 {
                     Id = id,
                     Content = message.Content,
                     Sender = message.Sender,
                     Timestamp = DateTime.UtcNow,
                     RoutingKey = "default"
-                }))
+                })
             },
             cancellationToken);
     }

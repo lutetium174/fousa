@@ -29,7 +29,7 @@ public class Module : IModule
             .AddSingleton<IMessagesProducer, MessagesProducer>();
             
         services
-            .AddTransient<IMessagesQuerier, MessageService>();
+            .AddTransient<IMessagesQuerier, MessagesQuerier>();
     }
 }
 

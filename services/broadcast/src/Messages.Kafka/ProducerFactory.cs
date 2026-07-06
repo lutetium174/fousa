@@ -7,8 +7,8 @@ public class ProducerFactory(IOptions<KafkaOptions> options)
 {
     private readonly KafkaOptions _options = options.Value;
 
-    public IProducer<byte[], byte[]> CreateProducer()
-        => new ProducerBuilder<byte[], byte[]>(_options.Username is null && _options.Password is null
+    public IProducer<string, string> CreateProducer()
+        => new ProducerBuilder<string, string>(_options.Username is null && _options.Password is null
                 ? BasicProducer()
                 : SecureProducer())
             .Build();

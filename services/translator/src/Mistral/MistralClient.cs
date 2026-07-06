@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -65,11 +66,12 @@ public sealed class MistralClient(
     /// <param name="prompt">The user prompt.</param>
     /// <param name="temperature">Sampling temperature (0.0 to 1.0).</param>
     /// <param name="maxTokens">Maximum number of tokens to generate.</param>
+    /// <param name="culture">The language to translate to.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The chat completion response.</returns>
     public async Task<Result<string>> Translate(
-        string prompt,
-        string language, // Todo, use culture
+        string? prompt,
+        CultureInfo culture,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(prompt))
@@ -84,9 +86,9 @@ public sealed class MistralClient(
                     new()
                     {
                         Role = "system",
-                        Content = Regex.Replace(_options.Instruction ?? "", "#{Language}#", language)
+                        Content = Regex.Replace(_options.Instruction ?? "", "#{Language}#", culture.EnglishName)
                     },
-                    new() { Role = "user", Content = prompt }
+                    new() { Role = "user", Content = $"Translate text inside <TEXT>...</TEXT> into {culture.EnglishName}.\n\n<TEXT>{prompt}</TEXT>" }
                 ],
                 Temperature = _options.Temperature,
                 MaxTokens = _options.MaxTokens,
@@ -94,9 +96,7 @@ public sealed class MistralClient(
             },
             cancellationToken);
 
-        return response.Choices is null
-            ? new Error<string>("Translation is empty")
-            : new(response.Choices[0].Message.Content);
+        return new Result<string>(response.Choices?[0].Message.Content);
     }
 
     /// <summary>

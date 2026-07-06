@@ -1,6 +1,7 @@
 info:
-  name: List AI Models
+  name: List Models
   type: http
+  seq: 1
 
 http:
   method: GET

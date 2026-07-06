@@ -20,6 +20,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Core\Core.csproj" />
+      <ProjectReference Include="..\Foundation\Foundation.csproj" />
       <ProjectReference Include="..\Messages.Abstractions\Messages.Abstractions.csproj" />
     </ItemGroup>
 

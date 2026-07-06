@@ -1,0 +1,17 @@
+info:
+  name: Translate
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:5071/german
+  body:
+    type: json
+    data: '"I went walking today #climate"'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

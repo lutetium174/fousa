@@ -1,5 +1,5 @@
 info:
-  name: Mistral Generate
+  name: Generate
   type: http
   seq: 1
 
