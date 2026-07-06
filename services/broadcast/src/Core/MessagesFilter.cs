@@ -1,4 +1,6 @@
-﻿namespace Core;
+﻿using System.Globalization;
+
+namespace Core;
 
 public class MessagesFilter
 {
@@ -9,6 +11,7 @@ public class MessagesFilter
     public int? Limit { get; set; }
     public List<string>? Tags { get; set; }
     public Guid? Sender { get; set; }
+    public CultureInfo? Culture { get; set; }
     
     // Empty filter means return all messages
     public bool IsEmpty => 

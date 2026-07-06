@@ -47,48 +47,42 @@ public class KafkaConsumerWorker(
             {
                 try
                 {
-                    var consumeResult = _consumer.Consume(stoppingToken);
-                    var message = consumeResult.Message.Value;
+                    var consumed = _consumer.Consume(stoppingToken);
+                    var message = consumed.Message.Value;
 
                     if (string.IsNullOrEmpty(message)) continue;
-                    
-                    try
-                    {
-                        var culture = new CultureInfo(configuration.GetValue<string>("Culture")!);
-                        var node = JsonNode.Parse(message);
-                        var content = node!["Content"]!.GetValue<string>();
-                        
-                        var result = await translator.Translate(
-                            content,
-                            culture,
-                            stoppingToken);
 
-                        await result.Match(async success =>
+                    var culture = new CultureInfo(configuration.GetValue<string>("Culture")!);
+                    var node = JsonNode.Parse(message);
+                    var content = node!["Content"]!.GetValue<string>();
+
+                    var translated = await translator.Translate(
+                        content,
+                        culture,
+                        stoppingToken);
+
+                    await translated.Match(
+                        async value =>
                         {
-
-                            node["Content"] = result.Value;
+                            node["Content"] = value.TrimStart();
 
                             await _producer.ProduceAsync(
                                 $"messages-{culture.Name}",
                                 new()
                                 {
-                                    Key = consumeResult.Message.Key,
+                                    Key = consumed.Message.Key,
                                     Value = node.ToJsonString()
                                 }, stoppingToken);
-                            
-                            _consumer.Commit(consumeResult);
+
+                            _consumer.Commit(consumed);
                         },
-                        failure =>
+                        error =>
                         {
                             logger.LogError("Translation failed for message: {Message}. Error: {Error}",
-                                content, failure);
+                                content, error);
+                            
                             return Task.CompletedTask;
                         });
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error processing message: {Message}", message);
-                    }
                 }
                 catch (ConsumeException e)
                 {
@@ -116,5 +110,7 @@ public class KafkaConsumerWorker(
         _consumer?.Dispose();
         _producer?.Dispose();
         base.Dispose();
+        
+        GC.SuppressFinalize(this);
     }
 }

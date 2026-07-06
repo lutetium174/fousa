@@ -10,20 +10,20 @@
 } from "components";
 
 export type MessageDetails = {
-  content: string;
-  counters: {
+  message: string;
+  counters?: {
     likes?: number;
     reposts?: number;
     replies?: number;
   };
 };
 
-const Message = (message: MessageDetails) => {
+const Message = (data: MessageDetails) => {
   return (
     <>
       <section style={{ display: "flex", "flex-direction": "row" }}>
         <Avatar size="sm" />
-        <p>{message.content}</p>
+        <p>{data.message}</p>
       </section>
       <section>
         <InputGroup orientation="horizontal">
@@ -33,12 +33,12 @@ const Message = (message: MessageDetails) => {
             aria-label="reposts"
             icon={<RepeatIcon />}
           >
-            <Badge
+            {data.counters && (data.counters.reposts ?? 0 > 0) && <Badge
               rounded
               size="sm"
               severity="primary"
-              value={message.counters.reposts}
-            />
+              value={data.counters.reposts}
+            />}
           </Button>
           <Button
             rounded
@@ -46,12 +46,12 @@ const Message = (message: MessageDetails) => {
             aria-label="replies"
             icon={<ChatIcon />}
           >
-            <Badge
+            {data.counters && (data.counters.replies ?? 0 > 0) && <Badge
               rounded
               size="sm"
               severity="primary"
-              value={message.counters.replies}
-            />
+              value={data.counters.replies}
+            />}
           </Button>
           <Button
             rounded
@@ -59,12 +59,12 @@ const Message = (message: MessageDetails) => {
             aria-label="likes"
             icon={<FavouriteIcon />}
           >
-            <Badge
+            {data.counters && (data.counters.likes ?? 0 > 0) && <Badge
               rounded
               size="sm"
               severity="primary"
-              value={message.counters.likes}
-            />
+              value={data.counters.likes}
+            />}
           </Button>
         </InputGroup>
       </section>

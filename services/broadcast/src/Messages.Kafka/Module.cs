@@ -1,6 +1,7 @@
 ﻿using Core;
 using Core.Broker;
 using Foundation;
+using Messages.Kafka.JsonExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -29,7 +30,8 @@ public class Module : IModule
             .AddSingleton<IMessagesProducer, MessagesProducer>();
             
         services
-            .AddTransient<IMessagesQuerier, MessagesQuerier>();
+            .AddTransient<IMessagesQuerier, MessagesQuerier>()
+            .ConfigureJsonOptions();
     }
 }
 

@@ -4,7 +4,9 @@ using System.Text.Json;
 using Confluent.Kafka;
 using Core;
 using Core.Broker;
+using Core.Responses;
 using Foundation;
+using Messages.Kafka.JsonExtensions;
 using Messages.Kafka.Models;
 using Microsoft.Extensions.Options;
 
@@ -18,7 +20,7 @@ public class MessagesQuerier(
 {
     private readonly KafkaOptions _kafkaOptions = kafkaOptions.Value;
     private readonly PinotOptions _pinotOptions = pinotOptions.Value;
-    
+
     private IConsumer<byte[], byte[]> CreateConsumer()
     {
         var consumer = new ConsumerConfig
@@ -40,8 +42,9 @@ public class MessagesQuerier(
 
         return new ConsumerBuilder<byte[], byte[]>(consumer).Build();
     }
-    
-    public async Task<Result<IEnumerable<string>>> Lookup(MessagesFilter filter, CancellationToken cancellationToken)
+
+    public async Task<Result<IEnumerable<MessageResponse>>> Lookup(MessagesFilter filter,
+        CancellationToken cancellationToken)
     {
         var effectiveLimit = filter.Limit ?? 1000; // Prevent unbounded result sets
 
@@ -53,13 +56,13 @@ public class MessagesQuerier(
 
         // Fallback to Kafka consumer for lookup
         var topic = _kafkaOptions.Topic ?? "messages";
-        var results = new List<string>();
+        var results = new List<MessageResponse>();
         await QueryKafka(topic, results, filter, effectiveLimit, cancellationToken);
 
         return new(results);
     }
 
-    private async Task QueryKafka(string topic, List<string> results, MessagesFilter filter, int limit,
+    private Task QueryKafka(string topic, List<MessageResponse> results, MessagesFilter filter, int limit,
         CancellationToken cancellationToken)
     {
         using var consumer = CreateConsumer();
@@ -89,12 +92,19 @@ public class MessagesQuerier(
             if (messageModel == null || !PassesFilter(messageModel, filter))
                 continue;
 
-            results.Add(messageModel.Content);
+            results.Add(new(
+                messageModel.Id,
+                messageModel.Sender,
+                messageModel.Content,
+                messageModel.Timestamp
+            ));
             messageCount++;
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task<Result<IEnumerable<string>>> QueryPinotWithLinq(
+    private async Task<Result<IEnumerable<MessageResponse>>> QueryPinotWithLinq(
         MessagesFilter filter,
         int limit,
         CancellationToken cancellationToken)
@@ -114,19 +124,22 @@ public class MessagesQuerier(
         var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
         var pinotResponse = JsonSerializer.Deserialize<QueryResponse>(
             responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            MessagesQuerierJsonOptions.Options);
 
         if (pinotResponse?.ResultTable == null) return new(null, new("No results found"));
 
 
         // Extract message contents and apply additional filtering with LINQ
-        var messages = new List<string>();
+        var messages = new List<MessageResponse>();
 
         // Process the results from Pinot - using LINQ to process results
-        var contentResults = pinotResponse.ResultTable.Rows.Select(row => row[0].ToString());
+        var contentResults = pinotResponse.ResultTable.Rows
+            .Select(row => new MessageResponse(
+                Guid.Parse(row[1].ToString()),
+                 Guid.Parse(row[3].ToString()),
+                 row[0].ToString(),
+                 DateTime.Parse(row[4].ToString())
+            ));
 
         messages.AddRange(contentResults);
 
@@ -135,7 +148,7 @@ public class MessagesQuerier(
         {
             messages = messages
                 .Where(content => string.IsNullOrEmpty(filter.ContentContains) ||
-                                  content.Contains(filter.ContentContains, StringComparison.OrdinalIgnoreCase))
+                                  content.Message.Contains(filter.ContentContains, StringComparison.OrdinalIgnoreCase))
                 .Take(limit)
                 .ToList();
         }
@@ -145,11 +158,11 @@ public class MessagesQuerier(
 
     private string BuildPinotSqlQuery(MessagesFilter filter, int limit)
     {
-        var tableName = _pinotOptions?.TableName ?? "messages";
+        var cultureTable = filter.Culture is not null ? $"-{filter.Culture.Name}" : "";
+        var tableName = $"{_pinotOptions.TableName ?? "messages"}{cultureTable}";
         var whereClause = BuildPinotWhereClause(filter);
 
-        // Build SQL query - using LINQ-like syntax
-        var query = $"SELECT * FROM {tableName}";
+        var query = $"SELECT * FROM \"{tableName}\"";
 
         if (!string.IsNullOrEmpty(whereClause))
         {
