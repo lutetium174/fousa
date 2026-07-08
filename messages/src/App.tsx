@@ -14,11 +14,11 @@ import {
 
 type actions = "discover" | "following";
 
-function App(_: { env: MicroFrontendEnvironment }) {
+function App(props: { env: MicroFrontendEnvironment }) {
   const [value, setValue] = createSignal<actions>("discover");
 
   const actionHandlers = {
-    discover: () => <Discoveries />,
+    discover: () => <Discoveries env={props.env} />,
     following: () => <Following />,
   };
 

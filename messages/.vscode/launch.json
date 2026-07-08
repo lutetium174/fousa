@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug",
+      "type": "firefox",
+      "request": "launch",
+      "url": "http://localhost:5174",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "pnpm: dev",
+      "firefoxExecutable": "C:\\Program Files\\Firefox Developer Edition\\firefox.exe",
+      "breakOnLoad": true,
+      "pathMapping": {
+        "/": "${workspaceFolder}/",
+        "http://localhost:5174/": "${workspaceFolder}/",
+        "http://localhost:5174/src/": "${workspaceFolder}/src/"
+      }
+    },
+    {
+      "name": "Attach to Firefox (Vite)",
+      "type": "firefox",
+      "request": "attach",
+      "host": "localhost",
+      "port": 5174,
+      "url": "http://localhost:5174",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}

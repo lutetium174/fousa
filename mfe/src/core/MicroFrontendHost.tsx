@@ -4,6 +4,7 @@ import { mountMicroFrontend } from "./MicroFrontendLoader.ts";
 import { Badge, SpinnerIcon } from "components";
 import { useRouter } from "../contexts/RouteContext.tsx";
 import { useI18n } from "../i18n/index.tsx";
+import { useGlobalContext } from "./GlobalContext.tsx";
 
 type MicroFrontendHostProps = {
   mfe: MicroFrontendDefinition;
@@ -13,6 +14,7 @@ export const MicroFrontendHost = (props: MicroFrontendHostProps) => {
   let containerRef: HTMLDivElement | undefined;
 
   const {i18n} = useI18n();
+  const { state } = useGlobalContext();
 
   const [error, setError] = createSignal<string | null>(null);
   const [loading, setLoading] = createSignal(true);
@@ -20,6 +22,9 @@ export const MicroFrontendHost = (props: MicroFrontendHostProps) => {
   const { route } = useRouter();
 
   createEffect(() => {
+    route();
+    state().language;
+
     if (containerRef) containerRef.innerHTML = "";
     setError(null);
     setLoading(true);
@@ -28,7 +33,6 @@ export const MicroFrontendHost = (props: MicroFrontendHostProps) => {
     let unmountFn: (() => void) | null = null;
 
     (async () => {
-      console.log(`loading: ${route().path}`);
       try {
         setLoad((_) => `${props.mfe.url}?_cb=${Date.now()}`);
         const unmount = await mountMicroFrontend(

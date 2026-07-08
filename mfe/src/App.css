@@ -1,3 +1,10 @@
+.app-controls {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  align-items: center;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

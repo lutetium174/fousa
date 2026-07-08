@@ -76,27 +76,25 @@ public class MessagesQuerier(
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Use Consume with timeout - will return null if no message available
             var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
             if (consumeResult == null)
             {
-                // No more messages available - this might mean we've reached the end
                 noMessageCount++;
                 continue;
             }
 
-            noMessageCount = 0; // Reset counter when we get a message
+            noMessageCount = 0;
             var json = Encoding.UTF8.GetString(consumeResult.Message.Value);
-            var messageModel = JsonSerializer.Deserialize<MessageModel>(json);
+            var message = JsonSerializer.Deserialize<MessageModel>(json);
 
-            if (messageModel == null || !PassesFilter(messageModel, filter))
+            if (message == null || !PassesFilter(message, filter))
                 continue;
 
             results.Add(new(
-                messageModel.Id,
-                messageModel.Sender,
-                messageModel.Content,
-                messageModel.Timestamp
+                message.Id,
+                message.Sender,
+                message.Content,
+                message.Timestamp
             ));
             messageCount++;
         }
@@ -120,7 +118,6 @@ public class MessagesQuerier(
 
         response.EnsureSuccessStatusCode();
 
-        // Parse the Pinot response
         var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
         var pinotResponse = JsonSerializer.Deserialize<QueryResponse>(
             responseContent,
@@ -128,22 +125,8 @@ public class MessagesQuerier(
 
         if (pinotResponse?.ResultTable == null) return new(null, new("No results found"));
 
+        var messages = new List<MessageResponse>(pinotResponse.ResultTable.Rows?.Select(Map) ?? []);
 
-        // Extract message contents and apply additional filtering with LINQ
-        var messages = new List<MessageResponse>();
-
-        // Process the results from Pinot - using LINQ to process results
-        var contentResults = pinotResponse.ResultTable.Rows
-            .Select(row => new MessageResponse(
-                Guid.Parse(row[1].ToString()),
-                 Guid.Parse(row[3].ToString()),
-                 row[0].ToString(),
-                 DateTime.Parse(row[4].ToString())
-            ));
-
-        messages.AddRange(contentResults);
-
-        // Apply additional LINQ filtering if needed
         if (!filter.IsEmpty)
         {
             messages = messages
@@ -155,6 +138,12 @@ public class MessagesQuerier(
 
         return new(messages.Take(limit));
     }
+
+    private MessageResponse Map(List<object> row) => new(
+        Guid.Parse(row[1].ToString()!),
+        Guid.Parse(row[3].ToString()!),
+        row[0].ToString()!,
+        DateTime.Parse(row[4].ToString()!));
 
     private string BuildPinotSqlQuery(MessagesFilter filter, int limit)
     {

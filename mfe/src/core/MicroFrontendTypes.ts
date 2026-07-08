@@ -1,11 +1,11 @@
 import type { IconProps } from "components";
 import type { EventBus } from "./EventBus";
-import type { GlobalContextAPI } from "./GlobalContext";
+import type { GlobalContext } from "./GlobalContext";
 import type { Component } from "solid-js";
 
 export type MicroFrontendEnv = {
   eventBus: EventBus;
-  globalContext: GlobalContextAPI;
+  globalContext: GlobalContext;
   basePath: string;
   routeParams?: Record<string, string>;
   runtimeVersion: string;

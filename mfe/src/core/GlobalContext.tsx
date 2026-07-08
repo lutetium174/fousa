@@ -1,4 +1,4 @@
-import { createContext, createSignal, Suspense, useContext } from "solid-js";
+import { createContext, createSignal, Suspense, useContext, createEffect } from "solid-js";
 import type { ParentComponent, Accessor } from "solid-js";
 import type { GlobalState } from "./GlobalContext";
 import { globalContext } from "./GlobalContext";
@@ -32,10 +32,16 @@ export const GlobalProvider: ParentComponent = (props) => {
     setState: (fn) => globalContext.update(fn),
   };
 
+  const handleLanguageChange = (language: string) => {
+    globalContext.update((prev) => ({ ...prev, language: language as "en" | "fr" }));
+  };
+
   return (
     <GlobalContext.Provider value={value}>
       <Suspense fallback={<SpinnerIcon />}>
-        <I18nProvider>{props.children}</I18nProvider>
+        <I18nProvider value={state().language} onChange={handleLanguageChange}>
+          {props.children}
+        </I18nProvider>
       </Suspense>
     </GlobalContext.Provider>
   );

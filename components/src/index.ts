@@ -1,6 +1,7 @@
 import './tokens.css';
 
 // --- Layout Components ---
+
 export { default as Card } from './components/Card/Card';
 export * from './components/Card/Card';
 export { default as Divider } from './components/Divider/Divider';
@@ -49,3 +50,9 @@ export { default as ThemeProvider } from './components/Theme/ThemeProvider';
 export * from './components/Theme/ThemeProvider';
 export { default as ThemeSwitcher } from './components/Theme/ThemeSwitcher';
 export * from './components/Theme/ThemeSwitcher';
+
+// --- Language ---
+export { default as LanguageProvider } from './components/Language/LanguageProvider';
+export * from './components/Language/LanguageProvider';
+export { default as LanguageSwitcher } from './components/Language/LanguageSwitcher';
+export * from './components/Language/LanguageSwitcher';

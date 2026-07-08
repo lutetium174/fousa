@@ -1,18 +1,22 @@
+export type Language = "en" | "fr";
+
 export type GlobalState = {
   theme: "light" | "dark";
+  language: Language;
   config: Record<string, unknown>;
   user: { id: string; name: string } | null;
 };
 
-export type GlobalContextAPI = {
+export type GlobalContext = {
   getState: () => GlobalState;
   subscribe: (listener: (state: GlobalState) => void) => () => void;
   update: (fn: (prev: GlobalState) => GlobalState) => void;
 };
 
-class GlobalContextImpl implements GlobalContextAPI {
+class GlobalContextImpl implements GlobalContext {
   private state: GlobalState = {
     theme: "light",
+    language: "en",
     config: {},
     user: null,
   };
@@ -49,4 +53,4 @@ class GlobalContextImpl implements GlobalContextAPI {
   }
 }
 
-export const globalContext: GlobalContextAPI = new GlobalContextImpl();
+export const globalContext: GlobalContext = new GlobalContextImpl();

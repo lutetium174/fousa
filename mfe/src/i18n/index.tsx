@@ -4,6 +4,7 @@ import {
   createSignal,
   createResource,
   createMemo,
+  createEffect,
   type Accessor,
   type Setter,
 } from "solid-js";
@@ -15,24 +16,37 @@ import {
 } from "@solid-primitives/i18n";
 import type { ParentProps } from "solid-js/types/render/component.js";
 
-type languages = "en" | "fr";
+type Language = "en" | "fr" | "es" | "de" | "it" | "pt" | "ja" | "ko";
 type I18nContextType = {
   i18n: Translator<BaseRecordDict, string>;
-  locale?: Accessor<languages>;
-  setLocale?: Setter<languages>;
+  locale: Accessor<Language>;
+  setLocale: Setter<Language>;
 };
 
 const I18nContext = createContext<I18nContextType>({
   i18n: {} as Translator<BaseRecordDict, string>,
+  locale: () => "en",
+  setLocale: () => {},
 });
 
 const dictionaries = {
   en: () => import("./dictionaries/en"),
   fr: () => import("./dictionaries/fr"),
+  es: () => import("./dictionaries/es"),
+  de: () => import("./dictionaries/de"),
+  it: () => import("./dictionaries/it"),
+  pt: () => import("./dictionaries/pt"),
+  ja: () => import("./dictionaries/ja"),
+  ko: () => import("./dictionaries/ko"),
 };
 
-export function I18nProvider(props: ParentProps<Record<string, any>>) {
-  const [locale, setLocale] = createSignal<languages>("en");
+export interface I18nProviderProps extends ParentProps {
+  value?: Language;
+  onChange?: (language: Language) => void;
+}
+
+export function I18nProvider(props: I18nProviderProps) {
+  const [locale, setLocale] = createSignal<Language>(props.value || "en");
 
   const [dictionary] = createResource(locale, async (language) => {
     const mod = await dictionaries[language]();
@@ -40,6 +54,10 @@ export function I18nProvider(props: ParentProps<Record<string, any>>) {
   });
 
   const i18n = createMemo(() => translator(() => dictionary()!))();
+
+  createEffect(() => {
+    props.onChange?.(locale());
+  });
 
   return (
     <I18nContext.Provider value={{ i18n, locale, setLocale }}>

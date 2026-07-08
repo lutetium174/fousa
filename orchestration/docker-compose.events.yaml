@@ -1,6 +1,32 @@
 name: events-stack
 
+networks:
+  events-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
+
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: events-traefik
+    hostname: traefik
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.traefik.address=:8080
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - events-network
   kafka:
     image: apache/kafka:latest
     container_name: kafka
@@ -26,6 +52,8 @@ services:
       KAFKA_MIN_INSYNC_REPLICAS: 1
     volumes:
       - kafka_data:/opt/kafka/data/kraft-combined-logs
+    networks:
+      - events-network
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -37,6 +65,13 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local-kafka
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kafka-ui.rule=Host(`kafka-ui.local`)"
+      - "traefik.http.routers.kafka-ui.entrypoints=web"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=8080"
+    networks:
+      - events-network
 
   zookeeper:
     image: zookeeper:latest
@@ -49,24 +84,38 @@ services:
     volumes:
       - zookeeper_data:/data
       - zookeeper_log:/datalog
+    networks:
+      - events-network
 
   pinot-controller:
     image: apachepinot/pinot:latest
     container_name: pinot-controller
+    hostname: pinot-controller
     ports:
       - "9000:9000"
     depends_on:
       - zookeeper
     environment:
       PINOT_ZK_ADDRESS: zookeeper:2181
+      PINOT_CONTROLLER_HOST: 172.19.0.6
+      PINOT_CONTROLLER_PORT: 9000
     volumes:
       - ./pinot/data:/data
       - ./pinot/config:/config
     command: "StartController -zkAddress zookeeper:2181"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pinot-controller.rule=Host(`pinot.local`)"
+      - "traefik.http.routers.pinot-controller.entrypoints=web"
+      - "traefik.http.services.pinot-controller.loadbalancer.server.port=9000"
+    networks:
+      events-network:
+        ipv4_address: 172.19.0.6
 
   pinot-broker:
     image: apachepinot/pinot:latest
     container_name: pinot-broker
+    hostname: pinot-broker
     command: "StartBroker -zkAddress zookeeper:2181"
     ports:
       - "8099:8099"
@@ -74,12 +123,17 @@ services:
       - pinot-controller
     environment:
       PINOT_ZK_ADDRESS: zookeeper:2181
-      PINOT_CONTROLLER_HOST: pinot-controller
+      PINOT_CONTROLLER_HOST: 172.19.0.6
       PINOT_CONTROLLER_PORT: 9000
+      PINOT_BROKER_HOST: pinot-broker
+    networks:
+      events-network:
+        ipv4_address: 172.19.0.7
 
   pinot-server:
     image: apachepinot/pinot:latest
     container_name: pinot-server
+    hostname: pinot-server
     command: "StartServer -zkAddress zookeeper:2181"
     ports:
       - "8098:8098"
@@ -87,58 +141,28 @@ services:
       - pinot-broker
     environment:
       PINOT_ZK_ADDRESS: zookeeper:2181
-      PINOT_CONTROLLER_HOST: pinot-controller
+      PINOT_CONTROLLER_HOST: 172.19.0.6
       PINOT_CONTROLLER_PORT: 9000
+      PINOT_SERVER_HOST: pinot-server
+    networks:
+      events-network:
+        ipv4_address: 172.19.0.8
 
   pinot-init:
     image: apachepinot/pinot:latest
     container_name: pinot-init
+    hostname: pinot-init
     depends_on:
       - pinot-server
     volumes:
       - ./pinot/config:/config
     entrypoint: ["sh", "-c"]
-    command: ["sleep 60 && /opt/pinot/bin/pinot-admin.sh AddSchema -schemaFile /config/messages-schema.json -controllerHost pinot-controller -controllerPort 9000 -exec || true && /opt/pinot/bin/pinot-admin.sh AddTable -tableConfigFile /config/messages-table.json -schemaFile /config/messages-schema.json -controllerHost pinot-controller -controllerPort 9000 -exec || true && tail -f /dev/null"]
-
-  # Schema Registry - required for ksqlDB
-  schema-registry:
-    image: confluentinc/cp-schema-registry:latest
-    container_name: schema-registry
-    ports:
-      - "8085:8081"
-    depends_on:
-      - kafka
+    command: ["sleep 60 && /opt/pinot/bin/pinot-admin.sh AddSchema -schemaFile /config/messages-schema.json -controllerHost 172.19.0.6 -controllerPort 9000 -exec || true && /opt/pinot/bin/pinot-admin.sh AddTable -tableConfigFile /config/messages-table.json -schemaFile /config/messages-schema.json -controllerHost 172.19.0.6 -controllerPort 9000 -exec || true && tail -f /dev/null"]
     environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9092
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-
-  # ksqlDB Server - Kafka Streams SQL engine
-  ksql-server:
-    image: confluentinc/cp-ksql-server:latest
-    container_name: ksql-server
-    ports:
-      - "8088:8088"
-    depends_on:
-      - kafka
-      - schema-registry
-    environment:
-      KSQL_BOOTSTRAP_SERVERS: kafka:9092
-      KSQL_LISTENERS: http://0.0.0.0:8088
-      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      KSQL_KSQL_SERVICE_ID: ksql_service
-      KSQL_KSQL_HIDDEN_TOPICS: ^_.*
-
-  # ksqlDB CLI - for interactive queries
-  ksql-cli:
-    image: confluentinc/cp-ksql-cli:latest
-    container_name: ksql-cli
-    depends_on:
-      - ksql-server
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["sleep infinity"]
-    volumes:
-      - ./kafka/ksql:/ksql-scripts
+      PINOT_CONTROLLER_HOST: 172.19.0.6
+      PINOT_CONTROLLER_PORT: 9000
+    networks:
+      - events-network
 
 volumes:
   kafka_data:

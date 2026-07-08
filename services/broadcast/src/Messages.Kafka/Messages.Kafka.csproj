@@ -21,4 +21,8 @@
       <ProjectReference Include="..\Foundation\Foundation.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Linqer\" />
+    </ItemGroup>
+
 </Project>

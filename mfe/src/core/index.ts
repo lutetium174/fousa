@@ -2,7 +2,7 @@ export { eventBus } from "./EventBus";
 export type { EventBus } from "./EventBus";
 
 export { globalContext } from "./GlobalContext";
-export type { GlobalState, GlobalContextAPI } from "./GlobalContext";
+export type { GlobalState, GlobalContext as GlobalContextAPI, Language } from "./GlobalContext";
 
 export {
   loadMicroFrontend,
