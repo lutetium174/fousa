@@ -19,6 +19,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Core\Core.csproj" />
       <ProjectReference Include="..\Foundation\Foundation.csproj" />
+      <ProjectReference Include="..\Kafka.LinqToKafka\Kafka.LinqToKafka.csproj" />
     </ItemGroup>
 
     <ItemGroup>

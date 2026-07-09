@@ -36,6 +36,8 @@ export { default as Avatar } from './components/Avatar/Avatar';
 export * from './components/Avatar/Avatar';
 export { default as Chip } from './components/Chip/Chip';
 export * from './components/Chip/Chip';
+export { default as VirtualScroll } from './components/VirtualScroll/VirtualScroll';
+export * from './components/VirtualScroll/VirtualScroll';
 
 // --- Navigation ---
 export { default as Navbar } from './components/Navbar/Navbar';
