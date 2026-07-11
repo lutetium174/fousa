@@ -1,6 +1,5 @@
-using System.Linq;
-using Kafka.LinqToKafka;
-using Xunit;
+﻿using System.Linq.Expressions;
+using NSubstitute;
 
 namespace Kafka.LinqToKafka.Tests;
 
@@ -8,21 +7,28 @@ public class KafkaQueryProviderTests
 {
     private readonly List<TestEntity> _testData =
     [
-        new() { Id = 1, Name = "Alice", Age = 30 },
-        new() { Id = 2, Name = "Bob", Age = 25 },
-        new() { Id = 3, Name = "Charlie", Age = 35 },
-        new() { Id = 4, Name = "David", Age = 20 },
-        new() { Id = 5, Name = "Eve", Age = 28 }
+        new() { Id = Guid.NewGuid(), Name = "Alice", Age = 30 },
+        new() { Id = Guid.NewGuid(), Name = "Bob", Age = 25 },
+        new() { Id = Guid.NewGuid(), Name = "Charlie", Age = 35 },
+        new() { Id = Guid.NewGuid(), Name = "David", Age = 20 },
+        new() { Id = Guid.NewGuid(), Name = "Eve", Age = 28 }
     ];
+
+    private KafkaQueryable<T> CreateQueryable<T>(IEnumerable<T> source)
+    {
+        var provider = Substitute.For<IQueryProvider>();
+        return new KafkaQueryable<T>(provider, Expression.Constant(source.AsQueryable()));
+    }
 
     [Fact]
     public void Where_FiltersCorrectly()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
-        var result = source.Where(e => e.Age > 25).ToList();
+        var someClass = new { Age = 25 };
+        var result = source.Where(e => e.Age > someClass.Age).ToList();
 
         // Assert
         Assert.Equal(3, result.Count);
@@ -34,10 +40,60 @@ public class KafkaQueryProviderTests
     }
 
     [Fact]
+    public void Where_WithEquality_FiltersCorrectly()
+    {
+        // Arrange
+        var source = CreateQueryable(_testData);
+
+        // Act
+        var result = source.Where(e => e.Name == "Alice").ToList();
+
+        // Assert
+        Assert.Equal(1, result.Count);
+        Assert.Equal("Alice", result[0].Name);
+        Assert.Equal(30, result[0].Age);
+    }
+
+    [Fact]
+    public void Where_WithGuidEquality_FiltersCorrectly()
+    {
+        // Arrange
+        var source = CreateQueryable(_testData);
+        var aliceId = _testData[0].Id;
+
+        // Act
+        var result = source.Where(e => e.Id == aliceId).ToList();
+
+        // Assert
+        Assert.Equal(1, result.Count);
+        Assert.Equal(aliceId, result[0].Id);
+        Assert.Equal("Alice", result[0].Name);
+    }
+
+    [Fact]
+    public void Where_WithFilterObject_SenderEquality_FiltersCorrectly()
+    {
+        var testMessages = new List<TestMessage>
+        {
+            new() { Id = Guid.NewGuid(), Sender = Guid.Parse("11111111-1111-1111-1111-111111111111"), Content = "Msg1" },
+            new() { Id = Guid.NewGuid(), Sender = Guid.Parse("22222222-2222-2222-2222-222222222222"), Content = "Msg2" },
+            new() { Id = Guid.NewGuid(), Sender = Guid.Parse("11111111-1111-1111-1111-111111111111"), Content = "Msg3" }
+        };
+        var source = CreateQueryable(testMessages);
+        var filter = new TestFilter { Sender = Guid.Parse("11111111-1111-1111-1111-111111111111") };
+        
+        var result = source.Where(x => x.Sender == filter.Sender).ToList();
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, m => Assert.Equal(filter.Sender, m.Sender));
+    }
+
+    [Fact]
     public void OrderBy_OrdersAscending()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.OrderBy(e => e.Age).ToList();
@@ -55,7 +111,7 @@ public class KafkaQueryProviderTests
     public void OrderByDescending_OrdersDescending()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.OrderByDescending(e => e.Age).ToList();
@@ -73,7 +129,7 @@ public class KafkaQueryProviderTests
     public void Take_LimitsResults()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.Take(2).ToList();
@@ -86,7 +142,7 @@ public class KafkaQueryProviderTests
     public void Skip_SkipsResults()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.Skip(2).ToList();
@@ -100,7 +156,7 @@ public class KafkaQueryProviderTests
     public void Where_And_Take_Combined()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.Where(e => e.Age > 25).Take(2).ToList();
@@ -115,7 +171,7 @@ public class KafkaQueryProviderTests
     public void OrderBy_And_Take_Combined()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.OrderBy(e => e.Age).Take(3).ToList();
@@ -131,7 +187,7 @@ public class KafkaQueryProviderTests
     public void Skip_And_Take_Combined()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.Skip(1).Take(2).ToList();
@@ -146,7 +202,7 @@ public class KafkaQueryProviderTests
     public void Where_And_OrderBy_Combined()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source.Where(e => e.Age > 25).OrderBy(e => e.Name).ToList();
@@ -162,7 +218,7 @@ public class KafkaQueryProviderTests
     public void ComplexQuery_Where_OrderByDescending_Skip_Take()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var result = source
@@ -182,7 +238,7 @@ public class KafkaQueryProviderTests
     public void EmptySource_ReturnsEmpty()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(new List<TestEntity>());
+        var source = CreateQueryable(new List<TestEntity>());
 
         // Act
         var result = source.Where(e => e.Age > 25).ToList();
@@ -195,10 +251,10 @@ public class KafkaQueryProviderTests
     public void Count_ExecutesCorrectly()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
-        var count = source.Where(e => e.Age > 25).Count();
+        var count = source.Count(e => e.Age > 25);
 
         // Assert
         Assert.Equal(3, count);
@@ -208,7 +264,7 @@ public class KafkaQueryProviderTests
     public void First_ExecutesCorrectly()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var first = source.OrderBy(e => e.Age).First();
@@ -221,7 +277,7 @@ public class KafkaQueryProviderTests
     public void Single_WithPredicate_ExecutesCorrectly()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var single = source.Single(e => e.Age == 20);
@@ -234,7 +290,7 @@ public class KafkaQueryProviderTests
     public void Any_ExecutesCorrectly()
     {
         // Arrange
-        var source = new KafkaQueryable<TestEntity>(_testData);
+        var source = CreateQueryable(_testData);
 
         // Act
         var hasYoung = source.Any(e => e.Age < 25);

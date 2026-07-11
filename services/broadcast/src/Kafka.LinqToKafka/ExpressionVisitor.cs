@@ -8,18 +8,14 @@ namespace Kafka.LinqToKafka;
 public class KafkaExpressionVisitor : ExpressionVisitor
 {
     private readonly StringBuilder _builder = new();
-    private readonly Dictionary<string, object> _parameters = new();
-    private int _parameterIndex;
+    private HashSet<ParameterExpression> _lambdaParameters = [];
+    private readonly Dictionary<ParameterExpression, object> _externalParameterValues = new();
 
     public string Query => _builder.ToString();
-    public IReadOnlyDictionary<string, object> Parameters => _parameters;
-
+    
     // Handle +, -, ==, >, <, &&, ||, etc.
     protected override Expression VisitBinary(BinaryExpression node)
     {
-        // Prefer writing "Column OP Value" when one side is a member (parameter) and the other is a constant/parameter.
-        bool IsColumn(Expression e) => e is MemberExpression me && me.Expression is ParameterExpression;
-
         var opText = node.NodeType switch
         {
             ExpressionType.Equal => " = ",
@@ -35,13 +31,13 @@ public class KafkaExpressionVisitor : ExpressionVisitor
         };
 
         _builder.Append('(');
-
+
         var leftIsCol = IsColumn(node.Left);
         var rightIsCol = IsColumn(node.Right);
 
         if (!leftIsCol && rightIsCol)
         {
-            // Swap so column appears before parameter: "Column OP @p0"
+            // Swap so column appears before value: "Column OP Value"
             Visit(node.Right);
             _builder.Append(opText);
             Visit(node.Left);
@@ -56,6 +52,12 @@ public class KafkaExpressionVisitor : ExpressionVisitor
         _builder.Append(')');
 
         return node;
+
+        // Prefer writing "Column OP Value" when one side is a column and the other is a value.
+        // A column is a MemberExpression where the underlying expression is a lambda parameter.
+        bool IsColumn(Expression e) => 
+            e is MemberExpression { Expression: ParameterExpression param } && 
+            _lambdaParameters.Contains(param);
     }
 
     // Handle method calls like .Where(), .Select(), .Contains()
@@ -96,18 +98,40 @@ public class KafkaExpressionVisitor : ExpressionVisitor
         return node;
     }
 
+    // Track lambda parameters to distinguish them from outer parameters
+    protected override Expression VisitLambda<T>(Expression<T> node)
+    {
+        var oldLambdaParameters = _lambdaParameters;
+        _lambdaParameters = new HashSet<ParameterExpression>(node.Parameters);
+        
+        var body = Visit(node.Body);
+        
+        _lambdaParameters = oldLambdaParameters;
+        
+        return node.Update(body, node.Parameters);
+    }
+
     // Handle property/field access like u.Age or u.Name
     protected override Expression VisitMember(MemberExpression node)
     {
-        if (node.Expression is ConstantExpression constant)
+        switch (node.Expression)
         {
-            var value = GetMemberValue(node, constant.Value);
-            AddParameter(value);
+            case ConstantExpression constant:
+                AddParameter(GetMemberValue(node, constant.Value));
+                return node;
+            case ParameterExpression param when _lambdaParameters.Contains(param):
+                _builder.Append(node.Member.Name);
+                return node;
+            case ParameterExpression param when _externalParameterValues.TryGetValue(param, out var paramValue):
+                AddParameter(GetMemberValue(node, paramValue));
+                return node;
+            case ParameterExpression _:
+                _builder.Append(node.Member.Name);
+                return node;
+            default:
+                _builder.Append(node.Member.Name);
+                return node;
         }
-        else
-            _builder.Append(node.Member.Name);
-
-        return node;
     }
 
     // Handle literal values
@@ -117,19 +141,14 @@ public class KafkaExpressionVisitor : ExpressionVisitor
         {
             var elementType = queryable.GetType().GetGenericArguments()[0];
             GetTableName(elementType, out var tableName);
-            _builder.Append("FROM \"");
-            _builder.Append(tableName);
-            _builder.Append("\" ");
+            _builder.Append($"SELECT * FROM \"{tableName}\" ");
         }
         else if (node.Value?.GetType().IsGenericType == true && 
                  node.Value.GetType().GetGenericTypeDefinition() == typeof(KafkaQueryable<>))
         {
-            // Handle KafkaQueryable constant - extract the element type
             var elementType = node.Value.GetType().GetGenericArguments()[0];
             GetTableName(elementType, out var tableName);
-            _builder.Append("FROM \"");
-            _builder.Append(tableName);
-            _builder.Append("\" ");
+            _builder.Append($"SELECT * FROM \"{tableName}\" ");
         }
         else
             AddParameter(node.Value);
@@ -149,12 +168,17 @@ public class KafkaExpressionVisitor : ExpressionVisitor
         tableName = type.Name;
     }
 
-    private void AddParameter(object? value)
-    {
-        var paramName = $"@p{_parameterIndex++}";
-        _parameters[paramName] = value ?? DBNull.Value;
-        _builder.Append(paramName);
-    }
+    private StringBuilder AddParameter(object? value)
+        => value switch
+        {
+            null => _builder.Append("NULL"),
+            Guid guid => _builder.Append($"'{guid}'"),
+            string str => _builder.Append($"'{str.Replace("'", "''")}'"),
+            int or long or double or float or decimal or bool => _builder.Append(value),
+            DateTime dateTime => _builder.Append($"'{dateTime:o}'"),
+          
+            _ => _builder.Append(value)
+        };
 
     private static object? GetMemberValue(MemberExpression member, object? container)
         => member.Member switch

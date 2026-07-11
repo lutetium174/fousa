@@ -1,5 +1,6 @@
-import { VirtualScroll, createSignal, createEffect, onCleanup } from "components";
+import { VirtualScroll } from "components";
 import type { VirtualScrollProps } from "components";
+import { createEffect, createSignal } from "solid-js";
 
 // Generate sample data
 const generateItems = (count: number, start = 0) => {
@@ -397,7 +398,43 @@ export default {
   parameters: {
     docs: {
       description: {
-        component: "Data-driven Virtual Scroll component for efficiently rendering large lists. Based on PrimeVue's Loading and Lazy Virtual Scroller design.\n\n## Server-Side Loading\n\nUse the `onLazyLoad` callback to load data from a server as the user scrolls. The callback receives `{ first: number, last: number }` indicating the currently visible item range.\n\n### Basic Infinite Loading Pattern:\n\n```tsx\nconst MyVirtualList = () => {\n  const [items, setItems] = createSignal([]);\n  const [loading, setLoading] = createSignal(false);\n  const [page, setPage] = createSignal(1);\n\n  const loadMore = async () => {\n    if (loading()) return;\n    setLoading(true);\n    const newItems = await fetchData(page());\n    setItems(prev => [...prev, ...newItems]);\n    setPage(prev => prev + 1);\n    setLoading(false);\n  }\n\n  const handleLazyLoad = ({ first, last }) => {\n    const threshold = 10; // Load more when 10 items from end\n    if (last >= items().length - threshold) {\n      loadMore();\n    }\n  }\n\n  return (\n    <VirtualScroll\n      items={items()}\n      itemTemplate={renderItem}\n      onLazyLoad={handleLazyLoad}\n      loading={loading()}\n      loadingMessage="Loading..."\n    />\n  )\n}\n```\n\n### Advanced Features:\n\n- Use `smoothScroll={true}` for smooth scrolling behavior\n- Use `snapToItems={true}` to snap to item boundaries when scrolling stops\n- Adjust `numToleratedItems` to control how many extra items are rendered outside the viewport\n- The component efficiently handles large datasets by only rendering visible items"
+        component: "Data-driven Virtual Scroll component for efficiently rendering large lists. Based on PrimeVue's Loading and Lazy Virtual Scroller design." +
+ "## Server-Side Loading" +
+ "Use the `onLazyLoad` callback to load data from a server as the user scrolls. The callback receives `{ first: number, last: number }` indicating the currently visible item range." +
+ "### Basic Infinite Loading Pattern:" +
+ "```tsx" +
+ "const MyVirtualList = () => {" +
+ "  const [items, setItems] = createSignal([]);" +
+ "  const [loading, setLoading] = createSignal(false);" +
+ "  const [page, setPage] = createSignal(1);" +
+ "  const loadMore = async () => {" +
+ "    if (loading()) return;" +
+ "    setLoading(true);" +
+ "    const newItems = await fetchData(page());" +
+ "    setItems(prev => [...prev, ...newItems]);" +
+ "    setPage(prev => prev + 1);" +
+ "    setLoading(false);" +
+ "  }" +
+ "  const handleLazyLoad = ({ first, last }) => {" +
+ "    const threshold = 10; // Load more when 10 items from end" +
+ "    if (last >= items().length - threshold) {" +
+ "      loadMore();" +
+ "    }" +
+ "  }" +
+ "  return (" +
+ "    <VirtualScroll" +
+ "      items={items()}" +
+ "      itemTemplate={renderItem}" +
+ "      onLazyLoad={handleLazyLoad}" +
+ "      loading={loading()}" +
+ "      loadingMessage=\"Loading...\"/>)" +
+ "}" +
+ "```" +
+ "### Advanced Features:" +
+ "- Use `smoothScroll={true}` for smooth scrolling behavior" +
+ "- Use `snapToItems={true}` to snap to item boundaries when scrolling stops" +
+ "- Adjust `numToleratedItems` to control how many extra items are rendered outside the viewport" +
+ "- The component efficiently handles large datasets by only rendering visible items"
       }
     }
   }

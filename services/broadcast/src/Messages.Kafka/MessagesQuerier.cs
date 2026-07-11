@@ -9,12 +9,14 @@ using Foundation;
 using Messages.Kafka.JsonExtensions;
 using Messages.Kafka.Models;
 using Microsoft.Extensions.Options;
+using Message = Messages.Kafka.Models.Message;
 
 namespace Messages.Kafka;
 
 public class MessagesQuerier(
     IOptions<KafkaOptions> kafkaOptions,
     IOptions<PinotOptions> pinotOptions,
+    MessagesContext messagesContext,
     HttpClient httpClient)
     : IMessagesQuerier, IDisposable
 {
@@ -108,6 +110,11 @@ public class MessagesQuerier(
         CancellationToken cancellationToken)
     {
         var queryUrl = BuildPinotQueryUrl();
+        var sender = filter.Sender;
+        var query = filter.Sender.HasValue
+            ? messagesContext.GermanMessages.Where(x => x.Sender == sender).ToList()
+            : messagesContext.GermanMessages.ToList();
+        
         var response = await httpClient.PostAsJsonAsync(
             queryUrl,
             new

@@ -19,11 +19,72 @@ public class KafkaExpressionVisitorTests
 
         // Assert
         Assert.Contains(" = ", visitor.Query);
-        Assert.Contains("@p0", visitor.Query);
-        Assert.Single(visitor.Parameters);
-        Assert.Equal(30, visitor.Parameters["@p0"]);
+        Assert.Contains("30", visitor.Query);
     }
 
+    [Fact]
+    public void VisitBinary_Equal_WithMemberAccessOnBothSides_ProducesCorrectQuery()
+    {
+        var visitor = new KafkaExpressionVisitor();
+        var messageParam = Expression.Parameter(typeof(TestMessage), "x");
+        var filter = new Filter { Sender = Guid.Parse("11111111-1111-1111-1111-111111111111") };
+        var filterConstant = Expression.Constant(filter);
+        
+        var left = Expression.Property(messageParam, nameof(TestMessage.Sender));
+        var right = Expression.Property(filterConstant, nameof(Filter.Sender));
+        
+        var lambda = Expression.Lambda<Func<TestMessage, bool>>(
+            Expression.Equal(left, right),
+            messageParam);
+        
+        var source = Expression.Constant(new List<TestMessage>().AsQueryable());
+        var whereCall = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Where),
+            [typeof(TestMessage)],
+            source,
+            lambda);
+
+        // Act
+        visitor.Visit(whereCall);
+
+        // Assert
+        Assert.Contains(" = ", visitor.Query);
+        Assert.Contains("WHERE", visitor.Query);
+        Assert.Contains("Sender = '11111111-1111-1111-1111-111111111111'", visitor.Query);
+    }
+
+    [Fact]
+    public void VisitMethodCall_Where_WithFilterObjectSender_ProducesCorrectQuery()
+    {
+        var visitor = new KafkaExpressionVisitor();
+        var filter = new Filter { Sender = Guid.Parse("11111111-1111-1111-1111-111111111111") };
+        var filterConstant = Expression.Constant(filter);
+        
+        var messageParam = Expression.Parameter(typeof(TestMessage), "x");
+        var senderProp = Expression.Property(messageParam, nameof(TestMessage.Sender));
+        var filterSenderProp = Expression.Property(filterConstant, nameof(Filter.Sender));
+        
+        var whereClause = Expression.Lambda<Func<TestMessage, bool>>(
+            Expression.Equal(senderProp, filterSenderProp), 
+            messageParam);
+        
+        var source = Expression.Constant(new List<TestMessage>().AsQueryable());
+        var whereCall = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Where),
+            [typeof(TestMessage)],
+            source,
+            whereClause);
+
+        // Act
+        visitor.Visit(whereCall);
+
+        // Assert
+        Assert.Contains("WHERE", visitor.Query);
+        Assert.Contains("Sender = '11111111-1111-1111-1111-111111111111'", visitor.Query);
+    }
+    
     [Fact]
     public void VisitBinary_GreaterThan_ProducesCorrectQuery()
     {
@@ -39,7 +100,7 @@ public class KafkaExpressionVisitorTests
 
         // Assert
         Assert.Contains(" > ", visitor.Query);
-        Assert.Contains("@p0", visitor.Query);
+        Assert.Contains("25", visitor.Query);
     }
 
     [Fact]
@@ -274,7 +335,7 @@ public class KafkaExpressionVisitorTests
 
         // Assert
         Assert.Contains("FROM \"TestEntity\" ", visitor.Query);
-        Assert.Contains("WHERE (Age > @p0)", visitor.Query);
+        Assert.Contains("WHERE (Age > 25)", visitor.Query);
         Assert.Contains("ORDER BY Name ASC", visitor.Query);
     }
 
@@ -331,4 +392,9 @@ public class KafkaExpressionVisitorTests
         var descIndex = query.IndexOf("DESC", StringComparison.Ordinal);
         Assert.True(ageIndex < descIndex, "Column name should appear before DESC direction");
     }
+}
+
+internal class Filter
+{
+    public Guid Sender { get; set; }
 }

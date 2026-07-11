@@ -1,4 +1,4 @@
-﻿import {
+import {
   Button,
   Badge,
   RepeatIcon,
@@ -8,6 +8,7 @@
   InputGroup,
   Avatar,
 } from "components";
+import { type Component } from "solid-js";
 
 export type MessageDetails = {
   message: string;
@@ -18,12 +19,17 @@ export type MessageDetails = {
   };
 };
 
-const Message = (data: MessageDetails) => {
+/**
+ * Message Component - Displays a single message with interaction counters
+ * 
+ * This component can be embedded using DynamicContainer from the main MFE.
+ */
+const Message: Component<MessageDetails> = (props) => {
   return (
     <>
-      <section style={{ display: "flex", "flex-direction": "row" }}>
+      <section style={{ display: "flex", "flex-direction": "row", gap: "12px", alignItems: "center" }}>
         <Avatar size="sm" />
-        <p>{data.message}</p>
+        <p style={{ margin: 0 }}>{props.message}</p>
       </section>
       <section>
         <InputGroup orientation="horizontal">
@@ -33,11 +39,11 @@ const Message = (data: MessageDetails) => {
             aria-label="reposts"
             icon={<RepeatIcon />}
           >
-            {data.counters && (data.counters.reposts ?? 0 > 0) && <Badge
+            {props.counters && (props.counters.reposts ?? 0 > 0) && <Badge
               rounded
               size="sm"
               severity="primary"
-              value={data.counters.reposts}
+              value={props.counters.reposts}
             />}
           </Button>
           <Button
@@ -46,11 +52,11 @@ const Message = (data: MessageDetails) => {
             aria-label="replies"
             icon={<ChatIcon />}
           >
-            {data.counters && (data.counters.replies ?? 0 > 0) && <Badge
+            {props.counters && (props.counters.replies ?? 0 > 0) && <Badge
               rounded
               size="sm"
               severity="primary"
-              value={data.counters.replies}
+              value={props.counters.replies}
             />}
           </Button>
           <Button
@@ -59,11 +65,11 @@ const Message = (data: MessageDetails) => {
             aria-label="likes"
             icon={<FavouriteIcon />}
           >
-            {data.counters && (data.counters.likes ?? 0 > 0) && <Badge
+            {props.counters && (props.counters.likes ?? 0 > 0) && <Badge
               rounded
               size="sm"
               severity="primary"
-              value={data.counters.likes}
+              value={props.counters.likes}
             />}
           </Button>
         </InputGroup>

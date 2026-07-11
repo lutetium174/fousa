@@ -189,3 +189,141 @@
     border-right-color: var(--border);
   }
 }
+
+/* Dynamic Container Styles */
+.dynamic-containers-section {
+  padding: 24px;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+}
+
+.dynamic-containers-section h2 {
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.dynamic-container {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.dynamic-container[data-mfe-url] {
+  position: relative;
+}
+
+.dynamic-container::before {
+  content: attr(data-component);
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  z-index: 1;
+}
+
+.dynamic-container-loading,
+.dynamic-container-error,
+.dynamic-container-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 60px;
+}
+
+.dynamic-container-loading {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.dynamic-container-error {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.dynamic-container-content {
+  width: 100%;
+  height: 100%;
+}
+
+.message-creator-container {
+  min-height: 200px;
+  border-color: var(--accent);
+}
+
+.message-list-container {
+  min-height: 300px;
+  border-color: var(--success);
+}
+
+/* Chat Component Container */
+.chat-container {
+  min-height: 100px;
+  border-color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.chat-container .dynamic-container-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+/* Message Component Container */
+.message-container {
+  min-height: 150px;
+  border-color: var(--info);
+}
+
+.message-container .dynamic-container-content {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Batch Dynamic Container Styles */
+.batch-dynamic-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.batch-container-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--bg);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.batch-container-item[data-component]::before {
+  content: attr(data-component);
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  z-index: 1;
+}

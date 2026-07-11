@@ -1,10 +1,25 @@
-import type {MicroFrontendModule, MicroFrontendEnv} from "./MicroFrontendTypes.ts";
-import {eventBus} from "./EventBus";
-import {globalContext} from "./GlobalContext";
+import type {
+  MicroFrontendModule,
+  MicroFrontendEnv,
+  LoadedComponent,
+} from "./MicroFrontendTypes.ts";
+import { eventBus } from "./EventBus";
+import { globalContext } from "./GlobalContext";
 
 const RUNTIME_VERSION = "1.0.0";
 
+// Cache for loaded modules
+const moduleCache = new Map<string, MicroFrontendModule>();
+
+// Cache for loaded components
+const componentCache = new Map<string, Map<string, LoadedComponent>>();
+
 export async function loadMicroFrontend(url: string): Promise<MicroFrontendModule> {
+  // Check cache first
+  if (moduleCache.has(url)) {
+    return moduleCache.get(url)!;
+  }
+
   try {
     const module = await import(url);
 
@@ -16,7 +31,9 @@ export async function loadMicroFrontend(url: string): Promise<MicroFrontendModul
       throw new Error(`Module at ${url} does not export 'unmount' function`);
     }
 
-    return module as MicroFrontendModule;
+    const loadedModule = module as MicroFrontendModule;
+    moduleCache.set(url, loadedModule);
+    return loadedModule;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const fullError = new Error(
@@ -52,4 +69,56 @@ export async function mountMicroFrontend(
       console.error(`Error unmounting module from ${url}:`, error);
     }
   };
+}
+
+// Load a specific component from a microfrontend module
+export async function loadComponentFromModule<T = unknown>(
+  url: string,
+  componentName: string
+): Promise<LoadedComponent<T>> {
+  // Check component cache first
+  if (componentCache.has(url)) {
+    const urlComponents = componentCache.get(url)!;
+    if (urlComponents.has(componentName)) {
+      return urlComponents.get(componentName)!;
+    }
+  }
+
+  try {
+    const module = await import(/* @vite-ignore */ url);
+
+    if (!module[componentName]) {
+      throw new Error(
+        `Module at ${url} does not export component '${componentName}'`
+      );
+    }
+
+    const component = module[componentName] as Component<T>;
+    
+    // Create component entry if it doesn't exist
+    if (!componentCache.has(url)) {
+      componentCache.set(url, new Map());
+    }
+    
+    const loadedComponent: LoadedComponent<T> = {
+      component,
+    };
+    
+    componentCache.get(url)!.set(componentName, loadedComponent);
+    
+    return loadedComponent;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const fullError = new Error(
+      `Failed to load component '${componentName}' from ${url}: ${errorMessage}`
+    );
+    console.error(fullError);
+    throw fullError;
+  }
+}
+
+// Clear caches (useful for hot reloading)
+export function clearCaches(): void {
+  moduleCache.clear();
+  componentCache.clear();
 }

@@ -6,6 +6,8 @@ export { default as Card } from './components/Card/Card';
 export * from './components/Card/Card';
 export { default as Divider } from './components/Divider/Divider';
 export * from './components/Divider/Divider';
+export { default as Dialog } from './components/Dialog/Dialog';
+export * from './components/Dialog/Dialog';
 
 // --- Form Components ---
 export { default as Button } from './components/Button/Button';

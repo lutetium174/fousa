@@ -1,6 +1,7 @@
 ﻿using Core;
 using Core.Broker;
 using Foundation;
+using Kafka.LinqToKafka;
 using Messages.Kafka.JsonExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,8 @@ public class Module : IModule
         services
             .AddTransient<IMessagesQuerier, MessagesQuerier>()
             .ConfigureJsonOptions();
+        
+        services.AddSingleton<MessagesContext>();
     }
 }
 

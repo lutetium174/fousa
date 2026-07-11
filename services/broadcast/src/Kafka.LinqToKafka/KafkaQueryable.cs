@@ -6,15 +6,15 @@ namespace Kafka.LinqToKafka;
 public class KafkaQueryable<T> : IOrderedQueryable<T>
 {
     private readonly Expression _expression;
-    private readonly KafkaQueryProvider _provider;
+    private readonly IQueryProvider _provider;
 
-    public KafkaQueryable(IEnumerable<T> source)
+    public KafkaQueryable(HttpClient httpClient, string pinotBaseUrl)
     {
-        _provider = new(source.AsQueryable());
+        _provider = new KafkaQueryProvider(httpClient, pinotBaseUrl);
         _expression = Expression.Constant(this);
     }
 
-    internal KafkaQueryable(KafkaQueryProvider provider, Expression expression)
+    internal KafkaQueryable(IQueryProvider provider, Expression expression)
     {
         _provider = provider;
         _expression = expression;
