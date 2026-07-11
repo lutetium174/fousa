@@ -14,20 +14,15 @@ export interface ChatProps {
   onError?: (error: string) => void;
 }
 
-/**
- * Chat Component - An embeddable chat component for the messages microfrontend
- * 
- * This component provides a chat interface that can be embedded anywhere in the app.
- * It includes a dialog for composing messages and a button to open the chat.
- */
 const Chat: Component<ChatProps> = (props) => {
   const [showChat, setShowChat] = createSignal<boolean>(false);
   const [message, setMessage] = createSignal<string>("");
 
   const sendMessage = async () => {
+    console.log(`Sending message ${message()}`);
     if (!message().trim()) return;
 
-    try {      
+    try {
       await fetch("http://localhost:5283/fuse/send", {
         method: "POST",
         headers: {
@@ -38,43 +33,43 @@ const Chat: Component<ChatProps> = (props) => {
           Content: message(),
         }),
       });
-      
-      // Notify parent component that message was sent
+
       props.onMessageSent?.(message());
-      
+
       setShowChat(false);
       setMessage("");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       props.onError?.(errorMessage);
       console.error("Failed to send message:", error);
     }
   };
 
-  return showChat() ? (
-    <Dialog open={showChat()} onClose={() => setShowChat(false)}>
-      <DialogHeader>
-        <h3>New Message</h3>
-      </DialogHeader>
-      <DialogContent>
-        <Input 
-          placeholder={"Type your message..."} 
-          value={message()}
-          onInput={(e) => setMessage(e.currentTarget.value)}
-          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-        />
-      </DialogContent>
-      <DialogFooter>
-        <Button variant="primary" onClick={sendMessage}>
-          Send
-        </Button>
-      </DialogFooter>
-    </Dialog>
-  ) : (
-    <Button 
-      icon={PlusIcon({})}
-      onClick={() => setShowChat(true)}
-    />
+  return (
+    <>
+      <Dialog open={showChat()} onClose={() => setShowChat(false)}>
+        <DialogHeader>
+          <h3>New Message</h3>
+        </DialogHeader>
+        <DialogContent>
+          <Input
+            placeholder={"Type your message..."}
+            value={message()}
+            onInput={(e) => setMessage(e.currentTarget.value)}
+            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+          />
+        </DialogContent>
+        <DialogFooter>
+          <Button variant="primary" onClick={sendMessage}>
+            Send
+          </Button>
+        </DialogFooter>
+      </Dialog>
+      {!showChat() && (
+        <Button icon={PlusIcon({})} onClick={() => setShowChat(true)} />
+      )}
+    </>
   );
 };
 

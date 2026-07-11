@@ -38,16 +38,6 @@ const App = () => {
             console.error("Failed to load Chat component:", error)
           }
         />
-
-        {/* Example of using the specialized container for Message component */}
-        <Messages.Component
-          componentName="Message"
-          componentProps={{
-            message: "This is an embedded message from the messages MFE!",
-            counters: { likes: 5, reposts: 2, replies: 3 }
-          }}
-          className="message-container"
-        />
       </div>
     </GlobalProvider>
   );

@@ -24,7 +24,7 @@ import { Badge, SpinnerIcon } from "components";
 // ============================================================================
 
 // Development: Direct imports from messages MFE (works with Vite's fs.allow)
-let MessagesComponents: Record<string, Component> | null = null;
+let MessagesComponents: Record<string, Component | Component<any>> | null = null;
 
 async function loadMessagesComponents(): Promise<Record<string, Component>> {
   if (MessagesComponents) return MessagesComponents;
@@ -36,10 +36,7 @@ async function loadMessagesComponents(): Promise<Record<string, Component>> {
     const module = await import("../../../messages/src/components/index.ts");
     
     MessagesComponents = {
-      Chat: module.Chat || module.default,
-      Message: module.Message || module.default,
-      Discoveries: module.Discoveries || module.default,
-      Following: module.Following || module.default,
+      Chat: module.Chat || module.default
     };
     
     return MessagesComponents;
