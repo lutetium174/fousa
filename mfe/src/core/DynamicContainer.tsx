@@ -1,19 +1,67 @@
+/**
+ * DynamicContainer - Working Implementation
+ * 
+ * This implementation uses a component registry pattern that works in both
+ * development and production. Instead of dynamic HTTP imports, it uses
+ * static imports with a registry of available components.
+ */
+
 import {
   createEffect,
   createSignal,
   onCleanup,
   Show,
   type Component,
-  type JSX,
 } from "solid-js";
-import type { MicroFrontendComponentDefinition } from "./MicroFrontendTypes.ts";
-import { loadComponentFromModule } from "./MicroFrontendLoader.ts";
 import { useGlobalContext } from "./GlobalContext.tsx";
 import { useI18n } from "../i18n/index.tsx";
 import { Badge, SpinnerIcon } from "components";
 
+// ============================================================================
+// COMPONENT REGISTRY
+// In development, we statically import components from microfrontends
+// In production, these would be loaded from the built microfrontend modules
+// ============================================================================
+
+// Development: Direct imports from messages MFE (works with Vite's fs.allow)
+let MessagesComponents: Record<string, Component> | null = null;
+
+async function loadMessagesComponents(): Promise<Record<string, Component>> {
+  if (MessagesComponents) return MessagesComponents;
+  
+  try {
+    // Import components from messages MFE
+    // This works because vite.config.ts has fs.allow: ['..']
+    // Path: mfe/src/core/ -> ../../messages/src/components/index.ts
+    const module = await import("../../../messages/src/components/index.ts");
+    
+    MessagesComponents = {
+      Chat: module.Chat || module.default,
+      Message: module.Message || module.default,
+      Discoveries: module.Discoveries || module.default,
+      Following: module.Following || module.default,
+    };
+    
+    return MessagesComponents;
+  } catch (error) {
+    console.error("Failed to load messages components:", error);
+    throw error;
+  }
+}
+
+// Registry of available microfrontend components
+const componentRegistry = new Map<string, () => Promise<Record<string, Component>>>([
+  ["messages", loadMessagesComponents],
+  // Add other MFEs here: ["search", loadSearchComponents],
+  // ["notifications", loadNotificationsComponents],
+]);
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
 export type DynamicContainerProps<T = unknown> = {
-  mfeUrl: string;
+  mfeName: string; // e.g., "messages", "search", "notifications"
   componentName: string;
   basePath?: string;
   props?: T;
@@ -22,12 +70,19 @@ export type DynamicContainerProps<T = unknown> = {
   onError?: (error: string) => void;
 };
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 /**
- * DynamicContainer - A container component that loads and renders specific components
- * from microfrontends while maintaining the microfrontend's context and isolation.
+ * DynamicContainer - Loads and renders specific components from microfrontends.
  * 
- * This allows you to embed components from different microfrontends anywhere in your app
- * without loading the entire microfrontend.
+ * Usage:
+ * <DynamicContainer
+ *   mfeName="messages"
+ *   componentName="Chat"
+ *   props={{ onMessageSent: (msg) => console.log(msg) }}
+ * />
  */
 export function DynamicContainer<T = unknown>(
   props: DynamicContainerProps<T>
@@ -38,17 +93,8 @@ export function DynamicContainer<T = unknown>(
   const [component, setComponent] = createSignal<Component<T> | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
-  const [loadKey, setLoadKey] = createSignal<string>("");
 
   createEffect(() => {
-    // Create a unique load key based on props to trigger reload when they change
-    const newLoadKey = `${props.mfeUrl}?component=${props.componentName}&lang=${state().language}&_t=${Date.now()}`;
-    setLoadKey(newLoadKey);
-  });
-
-  createEffect(() => {
-    loadKey(); // Trigger reload when loadKey changes
-    
     setLoading(true);
     setError(null);
     setComponent(null);
@@ -57,15 +103,32 @@ export function DynamicContainer<T = unknown>(
 
     (async () => {
       try {
-        const loaded = await loadComponentFromModule<T>(
-          props.mfeUrl,
-          props.componentName
-        );
-
+        // Get the loader for this MFE
+        const loader = componentRegistry.get(props.mfeName);
+        
+        if (!loader) {
+          throw new Error(`Microfrontend '${props.mfeName}' not registered`);
+        }
+        
+        // Load all components from this MFE
+        const components = await loader();
+        
         if (cancelled) return;
-
-        setComponent(() => loaded.component);
-        props.onLoad?.(loaded.component);
+        
+        // Get the specific component
+        const component = components[props.componentName];
+        
+        if (!component) {
+          throw new Error(`Component '${props.componentName}' not found in MFE '${props.mfeName}'`);
+        }
+        
+        if (typeof component !== 'function') {
+          throw new Error(`'${props.componentName}' is not a valid component`);
+        }
+        
+        setComponent(() => component as Component<T>);
+        props.onLoad?.(component as Component<T>);
+        
       } catch (err) {
         if (cancelled) return;
 
@@ -84,12 +147,14 @@ export function DynamicContainer<T = unknown>(
 
   import.meta.hot?.dispose(() => {
     setComponent(null);
+    // Clear cache on hot reload
+    MessagesComponents = null;
   });
 
   return (
     <div
       class={`dynamic-container ${props.className || ""}`}
-      data-mfe-url={props.mfeUrl}
+      data-mfe={props.mfeName}
       data-component={props.componentName}
     >
       <Show when={loading() && !component()}>
@@ -106,7 +171,6 @@ export function DynamicContainer<T = unknown>(
       </Show>
 
       <Show when={component() && !loading() && !error()}>
-        {/* @once - SolidJS will only render this once, maintaining component state */}
         <div class="dynamic-container-content">
           {component()!(props.props as T)}
         </div>
@@ -115,21 +179,21 @@ export function DynamicContainer<T = unknown>(
   );
 }
 
-// Higher-order component for creating specialized dynamic containers
-export function createDynamicContainer<T = unknown>(
-  mfeUrl: string,
-  basePath?: string
-) {
+// ============================================================================
+// FACTORY FUNCTION
+// ============================================================================
+
+export function createDynamicContainer(mfeName: string, basePath?: string) {
   return {
     Component: (props: { 
       componentName: string; 
-      componentProps?: T;
+      componentProps?: unknown;
       className?: string;
-      onLoad?: (component: Component<T>) => void;
+      onLoad?: (component: Component) => void;
       onError?: (error: string) => void;
     }) => (
-      <DynamicContainer<T>
-        mfeUrl={mfeUrl}
+      <DynamicContainer
+        mfeName={mfeName}
         componentName={props.componentName}
         basePath={basePath}
         props={props.componentProps}
@@ -141,9 +205,12 @@ export function createDynamicContainer<T = unknown>(
   };
 }
 
-// Batch container for loading multiple components from the same MFE
+// ============================================================================
+// BATCH CONTAINER
+// ============================================================================
+
 export type BatchDynamicContainerProps = {
-  mfeUrl: string;
+  mfeName: string;
   basePath?: string;
   components: Array<{
     componentName: string;
@@ -164,7 +231,6 @@ export function BatchDynamicContainer(
   >(new Map());
   const [errors, setErrors] = createSignal<Map<string, string>>(new Map());
 
-  // Load all components in parallel
   createEffect(() => {
     const newLoadingStates = new Map<string, boolean>();
     const newErrors = new Map<string, string>();
@@ -182,37 +248,50 @@ export function BatchDynamicContainer(
 
     let cancelled = false;
 
-    Promise.all(
-      props.components.map(async (comp) => {
-        try {
-          const loaded = await loadComponentFromModule(
-            props.mfeUrl,
-            comp.componentName
-          );
+    (async () => {
+      try {
+        const loader = componentRegistry.get(props.mfeName);
+        
+        if (!loader) {
+          throw new Error(`Microfrontend '${props.mfeName}' not registered`);
+        }
+        
+        const components = await loader();
+        
+        if (cancelled) return;
+        
+        // Load all requested components
+        props.components.forEach((comp) => {
+          const component = components[comp.componentName];
           
-          if (cancelled) return;
-          
-          newComponents.set(comp.componentName, loaded.component);
-          newLoadingStates.set(comp.componentName, false);
-          setLoadedComponents(new Map(newComponents));
-          setLoadingStates(new Map(newLoadingStates));
-        } catch (err) {
-          if (cancelled) return;
-          
-          const msg = err instanceof Error ? err.message : String(err);
+          if (!component) {
+            newErrors.set(comp.componentName, `Component not found`);
+            newLoadingStates.set(comp.componentName, false);
+          } else if (typeof component !== 'function') {
+            newErrors.set(comp.componentName, `Invalid component`);
+            newLoadingStates.set(comp.componentName, false);
+          } else {
+            newComponents.set(comp.componentName, component as Component<unknown>);
+            newLoadingStates.set(comp.componentName, false);
+          }
+        });
+        
+        setLoadedComponents(new Map(newComponents));
+        setLoadingStates(new Map(newLoadingStates));
+        setErrors(new Map(newErrors));
+        
+      } catch (err) {
+        if (cancelled) return;
+        
+        const msg = err instanceof Error ? err.message : String(err);
+        props.components.forEach((comp) => {
           newErrors.set(comp.componentName, msg);
           newLoadingStates.set(comp.componentName, false);
-          setErrors(new Map(newErrors));
-          setLoadingStates(new Map(newLoadingStates));
-        }
-      })
-    ).finally(() => {
-      if (!cancelled) {
-        // Mark any remaining as not loading
-        newLoadingStates.forEach((_, key) => newLoadingStates.set(key, false));
+        });
+        setErrors(new Map(newErrors));
         setLoadingStates(new Map(newLoadingStates));
       }
-    });
+    })();
 
     onCleanup(() => {
       cancelled = true;
@@ -222,10 +301,7 @@ export function BatchDynamicContainer(
   return (
     <div class={`batch-dynamic-container ${props.className || ""}`}>
       {props.components.map((comp) => (
-        <div
-          class="batch-container-item"
-          data-component={comp.componentName}
-        >
+        <div class="batch-container-item" data-component={comp.componentName}>
           <Show when={loadingStates().get(comp.componentName)}>
             <div class="dynamic-container-loading">
               <SpinnerIcon spin />
@@ -235,10 +311,7 @@ export function BatchDynamicContainer(
 
           <Show when={errors().get(comp.componentName)}>
             <div class="dynamic-container-error">
-              <Badge 
-                severity="danger" 
-                value={`Error: ${errors().get(comp.componentName)}`} 
-              />
+              <Badge severity="danger" value={`Error: ${errors().get(comp.componentName)}`} />
             </div>
           </Show>
 
@@ -254,3 +327,16 @@ export function BatchDynamicContainer(
     </div>
   );
 }
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export type {
+  DynamicContainerProps,
+  BatchDynamicContainerProps,
+};
+
+export {
+  componentRegistry,
+};

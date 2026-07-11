@@ -52,7 +52,7 @@ import { DynamicContainer, createDynamicContainer } from "./core";
 // Method 1: Direct usage
 <DynamicContainer
   mfeUrl="http://localhost:5174/src/components/index.ts"
-  componentName="MessageCreator"
+  componentName="Chat"
   basePath="/messages"
   props={{ theme: "dark" }}
   onError={(error) => console.error(error)}
@@ -65,10 +65,19 @@ const Messages = createDynamicContainer(
 );
 
 <Messages.Component
-  componentName="MessageList"
-  componentProps={{ limit: 10 }}
+  componentName="Chat"
+  componentProps={{ 
+    onMessageSent: (msg) => console.log("Message sent:", msg) 
+  }}
 />
 ```
+
+> **⚠️ Development Setup Required**: For the DynamicContainer to work in development, ensure:
+> 1. The messages MFE is running on port 5174 (`pnpm --filter messages dev`)
+> 2. The main MFE's vite.config.ts has `fs.allow: ['..']` to enable cross-directory imports
+> 3. Components are properly exported from the MFE's `src/components/index.ts`
+
+> **💡 Production Note**: For production builds, you need to use proper module federation or build the microfrontends and serve them from a CDN.
 
 ---
 

@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vite';
+import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import tailwindcss from '@tailwindcss/vite';
 import path from "path";
@@ -10,8 +10,9 @@ export default defineConfig({
     strictPort: true,
     open: true,
     fs: {
-      // allow serving files from one level up to enable monorepo component imports
-      allow: ['..']
+      // allow serving files from parent directories to enable monorepo component imports
+      // We need to go up from mfe/src/core/ to fousa/ (3 levels) then down to messages/
+      allow: ['..', '../../', '../../../']
     }
   },
   esbuild: {
@@ -23,7 +24,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@decadent/ui": path.resolve(__dirname, "../components/src")
+      "@decadent/ui": path.resolve(__dirname, "../components/src"),
     }
   }
 });

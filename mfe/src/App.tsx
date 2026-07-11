@@ -1,6 +1,6 @@
-import { 
-  GlobalProvider, 
-  RootContainer, 
+import {
+  GlobalProvider,
+  RootContainer,
   DynamicContainer,
   createDynamicContainer,
 } from "./core";
@@ -9,10 +9,7 @@ import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import "./App.css";
 
 // Create a specialized container for the messages microfrontend
-const Messages = createDynamicContainer(
-  "http://localhost:5174/src/components/index.ts",
-  "/messages"
-);
+const Messages = createDynamicContainer("messages", "/messages");
 
 const App = () => {
   return (
@@ -22,29 +19,24 @@ const App = () => {
         <LanguageSwitcher />
       </div>
       <RootContainer />
-      
+
       {/* Example of using DynamicContainer directly to load Chat from messages MFE */}
       <div class="dynamic-containers-section">
         <h2>Messages Microfrontend Components</h2>
-        
+
         <DynamicContainer
-          mfeUrl="http://localhost:5174/src/components/index.ts"
+          mfeName="messages"
           componentName="Chat"
           basePath="/messages"
           className="chat-container"
           props={{
-            senderId: "afa6c209-02c9-42af-965d-c98d0bb9a366",
-            placeholder: "Type your message here...",
-            buttonLabel: "Send Message",
-            showButtonIcon: true,
-            onMessageSent: (message) => {
-              console.log("Message sent from embedded Chat:", message);
-            },
-            onError: (error) => {
-              console.error("Chat error:", error);
-            }
+            onMessageSent: (message: string) =>
+              console.log("Message sent from embedded Chat:", message),
+            onError: (error: any) => console.error("Chat error:", error),
           }}
-          onError={(error) => console.error("Failed to load Chat component:", error)}
+          onError={(error) =>
+            console.error("Failed to load Chat component:", error)
+          }
         />
 
         {/* Example of using the specialized container for Message component */}

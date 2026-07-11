@@ -9,13 +9,7 @@ import {
 } from "components";
 import { createSignal, type Component } from "solid-js";
 
-// Define props interface for the Chat component
 export interface ChatProps {
-  senderId?: string;
-  apiEndpoint?: string;
-  placeholder?: string;
-  buttonLabel?: string;
-  showButtonIcon?: boolean;
   onMessageSent?: (message: string) => void;
   onError?: (error: string) => void;
 }
@@ -33,17 +27,14 @@ const Chat: Component<ChatProps> = (props) => {
   const sendMessage = async () => {
     if (!message().trim()) return;
 
-    try {
-      const endpoint = props.apiEndpoint || "http://localhost:5283/fuse/send";
-      const senderId = props.senderId || "afa6c209-02c9-42af-965d-c98d0bb9a366";
-      
-      await fetch(endpoint, {
+    try {      
+      await fetch("http://localhost:5283/fuse/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          Sender: senderId,
+          Sender: "afa6c209-02c9-42af-965d-c98d0bb9a366",
           Content: message(),
         }),
       });
@@ -67,7 +58,7 @@ const Chat: Component<ChatProps> = (props) => {
       </DialogHeader>
       <DialogContent>
         <Input 
-          placeholder={props.placeholder || "Type your message..."} 
+          placeholder={"Type your message..."} 
           value={message()}
           onInput={(e) => setMessage(e.currentTarget.value)}
           onKeyPress={(e) => e.key === "Enter" && sendMessage()}
@@ -75,17 +66,15 @@ const Chat: Component<ChatProps> = (props) => {
       </DialogContent>
       <DialogFooter>
         <Button variant="primary" onClick={sendMessage}>
-          {props.buttonLabel || "Send"}
+          Send
         </Button>
       </DialogFooter>
     </Dialog>
   ) : (
     <Button 
-      icon={props.showButtonIcon !== false ? PlusIcon({}) : undefined}
+      icon={PlusIcon({})}
       onClick={() => setShowChat(true)}
-    >
-      {props.showButtonIcon === false ? "Chat" : undefined}
-    </Button>
+    />
   );
 };
 
