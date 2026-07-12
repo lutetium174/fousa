@@ -1,0 +1,35 @@
+{
+  "schemaName": "messages",
+  "dimensionFieldSpecs": [
+    {
+      "name": "Id",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "Content",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "Sender",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "RoutingKey",
+      "dataType": "STRING",
+      "singleValueField": true
+    }
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "Timestamp",
+      "dataType": "TIMESTAMP",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["Id"]
+}

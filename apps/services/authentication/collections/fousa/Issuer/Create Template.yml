@@ -1,0 +1,14 @@
+info:
+  name: Create Template
+  type: http
+
+http:
+  method: POST
+  url: https://localhost:5001/api/issuer/template
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

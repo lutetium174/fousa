@@ -1,0 +1,18 @@
+info:
+  name: Status
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:5000/api/verifier/status/:state
+  params:
+    - name: state
+      value: 09c51f87-07b2-4f45-b5da-c6ee9cf33afd
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

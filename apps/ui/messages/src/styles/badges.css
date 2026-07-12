@@ -1,0 +1,15 @@
+﻿.badge-tiny  { --badge-size: var(--badge-size-tiny); }
+.badge-small { --badge-size: var(--badge-size-small); }
+.badge-medium{ --badge-size: var(--badge-size-medium); }
+.badge-large { --badge-size: var(--badge-size-large); }
+
+.badge-tiny .MuiBadge-badge,
+.badge-small .MuiBadge-badge,
+.badge-medium .MuiBadge-badge,
+.badge-large .MuiBadge-badge {
+    width: var(--badge-size);
+    height: var(--badge-size);
+    min-width: var(--badge-size);
+    font-size: calc(var(--badge-size) * 0.625);
+    padding: 0;
+}

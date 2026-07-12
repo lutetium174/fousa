@@ -1,0 +1,54 @@
+.pvLanguageSwitcher {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.pvLanguageSwitcherSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pvLanguageSwitcherLabel {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pvLanguageSwitcherButtons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pvLanguageBtn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.pvLanguageBtn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
+}
+
+.pvLanguageBtnActive {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.pvLanguageBtnActive:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}

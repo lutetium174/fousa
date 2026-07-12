@@ -1,0 +1,25 @@
+info:
+  name: Generate
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5050/api/generate
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "model": "mistral",
+        "prompt": "translate into French: Hello World"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

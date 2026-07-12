@@ -1,0 +1,60 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fousa", "src\App\fousa.csproj", "{D56FB038-A1C9-6759-CA6A-BA76A0106AFB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Did.Microsoft.Authenticator", "src\Did.Microsoft.Authenticator\Did.Microsoft.Authenticator.csproj", "{319186AA-16F8-4B14-AA8B-B7EB62D277CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Did.WaltId.Wallet", "src\Did.WaltId.Wallet\Did.WaltId.Wallet.csproj", "{42A735C2-B7F7-4659-B329-885338C9BDB8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Engine", "src\Engine\Engine.csproj", "{17AC146C-2C67-4F45-A8BF-E32B60B89131}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Did.WaltId.Issuer", "Did.WaltId.Issuer\Did.WaltId.Issuer.csproj", "{F606A807-F2A1-4597-8230-F461437EE4FA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Did.WaltId.Verifier", "Did.WaltId.Verifier\Did.WaltId.Verifier.csproj", "{C949F370-9D2B-4ED1-B303-422914EA9C47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Did.Walt.Core", "Did.Walt.Core\Did.Walt.Core.csproj", "{481D813E-07BD-4A32-8BD8-229139CD5A70}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D56FB038-A1C9-6759-CA6A-BA76A0106AFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D56FB038-A1C9-6759-CA6A-BA76A0106AFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D56FB038-A1C9-6759-CA6A-BA76A0106AFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D56FB038-A1C9-6759-CA6A-BA76A0106AFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{319186AA-16F8-4B14-AA8B-B7EB62D277CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{319186AA-16F8-4B14-AA8B-B7EB62D277CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{319186AA-16F8-4B14-AA8B-B7EB62D277CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{319186AA-16F8-4B14-AA8B-B7EB62D277CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42A735C2-B7F7-4659-B329-885338C9BDB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42A735C2-B7F7-4659-B329-885338C9BDB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42A735C2-B7F7-4659-B329-885338C9BDB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42A735C2-B7F7-4659-B329-885338C9BDB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17AC146C-2C67-4F45-A8BF-E32B60B89131}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17AC146C-2C67-4F45-A8BF-E32B60B89131}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17AC146C-2C67-4F45-A8BF-E32B60B89131}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17AC146C-2C67-4F45-A8BF-E32B60B89131}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F606A807-F2A1-4597-8230-F461437EE4FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F606A807-F2A1-4597-8230-F461437EE4FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F606A807-F2A1-4597-8230-F461437EE4FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F606A807-F2A1-4597-8230-F461437EE4FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C949F370-9D2B-4ED1-B303-422914EA9C47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C949F370-9D2B-4ED1-B303-422914EA9C47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C949F370-9D2B-4ED1-B303-422914EA9C47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C949F370-9D2B-4ED1-B303-422914EA9C47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{481D813E-07BD-4A32-8BD8-229139CD5A70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{481D813E-07BD-4A32-8BD8-229139CD5A70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{481D813E-07BD-4A32-8BD8-229139CD5A70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{481D813E-07BD-4A32-8BD8-229139CD5A70}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6FB414B-A150-4B99-834E-B1EE21D5E693}
+	EndGlobalSection
+EndGlobal
