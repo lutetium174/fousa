@@ -1,4 +1,5 @@
 packages:
+  - "components"
   - "mfe"
-  - "messages"
+  - "messages/ui"
   

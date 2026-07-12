@@ -1,0 +1,25 @@
+{
+  "name": "messages",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:mfe": "vite --config vite.mfe.config.ts",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "components": "workspace:components",
+    "solid-js": "^1.9.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12",
+    "vite-plugin-solid": "^2.11.12"
+  },
+  "peerDependencies": {
+    "solid-js": "*"
+  }
+}

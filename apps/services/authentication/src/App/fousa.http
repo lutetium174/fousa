@@ -1,6 +1,0 @@
-@fousa_HostAddress = http://localhost:5254
-
-GET {{fousa_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
