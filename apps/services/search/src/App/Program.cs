@@ -1,5 +1,6 @@
 using Core;
 using Messages.Search;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +8,65 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IMessagesQuerier, MessagesQuerier>();
 builder.Services.AddSingleton<QueryParser>();
 
+// Add OpenAPI/Swagger support
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Search Service API",
+        Version = "v1",
+        Description = "A search service with DSL (Domain Specific Language) query support for messages. " +
+                      "Supports rich querying with operators like from:, to:, during:, status:, size:, sort:, etc.",
+        Contact = new OpenApiContact
+        {
+            Name = "Search Service",
+            Email = "support@example.com"
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+    
+    // Include XML comments for better documentation
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(System.AppContext.BaseDirectory, xmlFilename);
+    if (System.IO.File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+    
+    // Enable Scalar UI
+    options.CustomSchemaIds(type => type.FullName);
+    
+    // Add security definitions if needed
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer"
+    });
+});
+
 var app = builder.Build();
+
+// Enable OpenAPI/Swagger for all environments
+app.UseSwagger();
+
+// Enable Swagger UI at /swagger
+// For Scalar documentation (modern alternative to Swagger UI):
+// 1. Install Node.js and Scalar CLI: npm install -g @scalar/cli
+// 2. Run: npx @scalar/cli --url http://localhost:<port>/swagger/v1/swagger.json
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Search Service API v1");
+    options.RoutePrefix = "swagger";
+    options.DocumentTitle = "Search Service API - Swagger";
+});
 
 // Add test data endpoint - removed as GetAllMessages is not in interface
 
