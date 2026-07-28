@@ -36,7 +36,7 @@ async function loadMessagesComponents(): Promise<Record<string, Component>> {
     const module = await import("../../../messages/src/components/index.ts");
     
     MessagesComponents = {
-      Chat: module.Chat || module.default
+      Chat: module.Chat
     };
     
     return MessagesComponents;
@@ -57,7 +57,7 @@ const componentRegistry = new Map<string, () => Promise<Record<string, Component
 // TYPES
 // ============================================================================
 
-export type DynamicContainerProps<T = unknown> = {
+export type DynamicContainerProps<T extends object = Record<string, unknown>> = {
   mfeName: string; // e.g., "messages", "search", "notifications"
   componentName: string;
   basePath?: string;
@@ -81,11 +81,11 @@ export type DynamicContainerProps<T = unknown> = {
  *   props={{ onMessageSent: (msg) => console.log(msg) }}
  * />
  */
-export function DynamicContainer<T = unknown>(
+export function DynamicContainer<T extends object = Record<string, unknown>>(
   props: DynamicContainerProps<T>
 ) {
   const { i18n } = useI18n();
-  const { state } = useGlobalContext();
+  useGlobalContext();
 
   const [component, setComponent] = createSignal<Component<T> | null>(null);
   const [loading, setLoading] = createSignal(true);
@@ -157,13 +157,13 @@ export function DynamicContainer<T = unknown>(
       <Show when={loading() && !component()}>
         <div class="dynamic-container-loading">
           <SpinnerIcon spin />
-          <span>{i18n("loading") || "Loading..."}</span>
+          <span>{String(i18n("loading") ?? "Loading...")}</span>
         </div>
       </Show>
 
       <Show when={error() && !loading()}>
         <div class="dynamic-container-error">
-          <Badge severity="danger" value={`${i18n("errorLoadingComponent") || "Error loading component"}: ${error()}`} />
+          <Badge severity="danger" value={`${String(i18n("errorLoadingComponent") ?? "Error loading component")}: ${error()}`} />
         </div>
       </Show>
 
@@ -193,7 +193,7 @@ export function createDynamicContainer(mfeName: string, basePath?: string) {
         mfeName={mfeName}
         componentName={props.componentName}
         basePath={basePath}
-        props={props.componentProps}
+        props={props.componentProps as Record<string, unknown>}
         className={props.className}
         onLoad={props.onLoad}
         onError={props.onError}
@@ -221,7 +221,7 @@ export function BatchDynamicContainer(
   props: BatchDynamicContainerProps
 ) {
   const [loadedComponents, setLoadedComponents] = createSignal<
-    Map<string, Component<unknown>>
+    Map<string, Component<Record<string, unknown>>>
   >(new Map());
   const [loadingStates, setLoadingStates] = createSignal<
     Map<string, boolean>
@@ -231,7 +231,7 @@ export function BatchDynamicContainer(
   createEffect(() => {
     const newLoadingStates = new Map<string, boolean>();
     const newErrors = new Map<string, string>();
-    const newComponents = new Map<string, Component<unknown>>();
+    const newComponents = new Map<string, Component<Record<string, unknown>>>();
 
     props.components.forEach((comp) => {
       newLoadingStates.set(comp.componentName, true);
@@ -268,7 +268,7 @@ export function BatchDynamicContainer(
             newErrors.set(comp.componentName, `Invalid component`);
             newLoadingStates.set(comp.componentName, false);
           } else {
-            newComponents.set(comp.componentName, component as Component<unknown>);
+            newComponents.set(comp.componentName, component as Component<Record<string, unknown>>);
             newLoadingStates.set(comp.componentName, false);
           }
         });
@@ -316,7 +316,7 @@ export function BatchDynamicContainer(
                        !loadingStates().get(comp.componentName) && 
                        !errors().get(comp.componentName)}>
             <div class="dynamic-container-content">
-              {loadedComponents().get(comp.componentName)!(comp.props)}
+              {loadedComponents().get(comp.componentName)!(comp.props as Record<string, unknown>)}
             </div>
           </Show>
         </div>
@@ -328,11 +328,6 @@ export function BatchDynamicContainer(
 // ============================================================================
 // EXPORTS
 // ============================================================================
-
-export type {
-  DynamicContainerProps,
-  BatchDynamicContainerProps,
-};
 
 export {
   componentRegistry,

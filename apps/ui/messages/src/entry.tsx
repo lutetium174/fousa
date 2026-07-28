@@ -1,13 +1,13 @@
 ﻿/* @refresh reload */
+import { mount } from '.'
 import './index.css'
-import {mount} from "./index.tsx";
 
 const root = document.getElementById('root')
 
 mount(root!, {
   basePath: "/",
-  eventBus: {},
-  globalContext: {},
+  eventBus: {} as any,
+  globalContext: {} as any,
   runtimeVersion: "1.0.0",
   routeParams: undefined
 }).then(() => {

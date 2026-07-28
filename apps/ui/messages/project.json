@@ -1,0 +1,37 @@
+{
+  "name": "messages",
+  "sourceRoot": "apps/ui/messages",
+  "projectType": "application",
+  "tags": ["npm", "frontend", "solid-js"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev",
+        "cwd": "{workspaceRoot}/apps/ui/messages"
+      }
+    },
+    "dev:mfe": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev:mfe",
+        "cwd": "{workspaceRoot}/apps/ui/messages"
+      }
+    },
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build",
+        "cwd": "{workspaceRoot}/apps/ui/messages"
+      },
+      "outputs": ["{workspaceRoot}/apps/ui/messages/dist"]
+    },
+    "preview": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "preview",
+        "cwd": "{workspaceRoot}/apps/ui/messages"
+      }
+    }
+  }
+}

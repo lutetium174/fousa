@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Authors>Fousa Team</Authors>
+    <Company>Fousa</Company>
+    <PackageProjectUrl>https://github.com/fousa/libs</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fousa/libs</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <SourceLinkCreate>true</SourceLinkCreate>
+  </PropertyGroup>
+</Project>

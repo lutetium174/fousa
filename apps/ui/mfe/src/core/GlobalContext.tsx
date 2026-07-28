@@ -1,7 +1,7 @@
-import { createContext, createSignal, Suspense, useContext, createEffect } from "solid-js";
+import { createContext, createSignal, Suspense, useContext } from "solid-js";
 import type { ParentComponent, Accessor } from "solid-js";
-import type { GlobalState } from "./GlobalContext";
-import { globalContext } from "./GlobalContext";
+import type { GlobalState } from "./GlobalContext.ts";
+import { globalContext } from "./GlobalContext.ts";
 import { I18nProvider } from "../i18n";
 import { SpinnerIcon } from "components";
 

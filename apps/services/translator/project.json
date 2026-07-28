@@ -1,0 +1,37 @@
+{
+  "name": "translator",
+  "sourceRoot": "apps/services/translator",
+  "projectType": "application",
+  "tags": ["dotnet", "application", "service"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet build Translator.sln --configuration Release",
+        "cwd": "{workspaceRoot}/apps/services/translator"
+      },
+      "configurations": {
+        "Debug": {
+          "command": "dotnet build Translator.sln --configuration Debug",
+          "cwd": "{workspaceRoot}/apps/services/translator"
+        }
+      },
+      "outputs": ["{workspaceRoot}/apps/services/translator/src/App/bin"]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet test Translator.sln",
+        "cwd": "{workspaceRoot}/apps/services/translator"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet run --project src/App/App.csproj",
+        "cwd": "{workspaceRoot}/apps/services/translator"
+      },
+      "dependsOn": ["build"]
+    }
+  }
+}

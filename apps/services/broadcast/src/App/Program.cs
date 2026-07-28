@@ -1,6 +1,7 @@
 using Core;
 using Core.Broker;
 using Foundation;
+using Foundation.DependencyInjection.Web;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication

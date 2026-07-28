@@ -8,13 +8,18 @@ public class ChatCompletionRequest
     /// <summary>
     /// ID of the model to use.
     /// </summary>
-    public string Model { get; set; } = string.Empty;
+    public string Model { get; init; } = string.Empty;
 
     /// <summary>
     /// The messages to send to the model.
     /// </summary>
-    public List<ChatMessage> Messages { get; set; } = new();
+    public List<ChatMessage> Messages { get; init; } = [];
 
+    /// <summary>
+    /// Agent to use
+    /// </summary>
+    public string Agent { get; set; } = string.Empty;
+    
     /// <summary>
     /// Sampling temperature (0.0 to 1.0).
     /// </summary>
@@ -28,5 +33,5 @@ public class ChatCompletionRequest
     /// <summary>
     /// Whether to stream the response.
     /// </summary>
-    public bool Stream { get; set; } = false;
+    public bool Stream { get; set; }
 }

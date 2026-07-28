@@ -1,0 +1,42 @@
+{
+  "name": "foundation",
+  "sourceRoot": "libs/foundation",
+  "projectType": "library",
+  "tags": ["dotnet", "library"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet build Foundation.sln --configuration Release",
+        "cwd": "libs/foundation"
+      },
+      "configurations": {
+        "Debug": {
+          "command": "dotnet build Foundation.sln --configuration Debug",
+          "cwd": "libs/foundation"
+        }
+      },
+      "outputs": ["{workspaceRoot}/libs/foundation/src/Foundation/bin", "{workspaceRoot}/libs/foundation/src/Foundation.DependencyInjection.Web/bin"]
+    },
+    "pack": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "dotnet pack src/Foundation/Foundation.csproj -c Release -o dist/libs/foundation",
+          "dotnet pack src/Foundation.DependencyInjection.Web/Foundation.DependencyInjection.Web.csproj -c Release -o dist/libs/foundation"
+        ],
+        "cwd": "{workspaceRoot}/libs/foundation",
+        "parallel": false
+      },
+      "dependsOn": ["build"],
+      "outputs": ["{workspaceRoot}/dist/libs/foundation"]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet test Foundation.sln",
+        "cwd": "libs/foundation"
+      }
+    }
+  }
+}

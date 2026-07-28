@@ -14,9 +14,5 @@
     <ItemGroup>
         <InternalsVisibleTo Include="Kafka.LinqToKafka.Tests" />
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Foundation\Foundation.csproj" />
-    </ItemGroup>
     
 </Project>

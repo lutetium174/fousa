@@ -75,15 +75,15 @@ internal class MessageBroker(
             var body = Encoding.UTF8.GetBytes(json);
             var key = Encoding.UTF8.GetBytes(routingKey);
 
-            var topic = _options.Topic ?? "event-bus";
+            var topic = _options.Topic;
             
-            var result = await Producer.ProduceAsync(
+            await Producer.ProduceAsync(
                 topic, 
-                new Message<byte[], byte[]>
+                new()
                 {
                     Key = key,
                     Value = body,
-                    Headers = new Headers { { "routing-key", Encoding.UTF8.GetBytes(routingKey) } }
+                    Headers = new() { { "routing-key", Encoding.UTF8.GetBytes(routingKey) } }
                 },
                 cancellationToken);
 
@@ -99,7 +99,7 @@ internal class MessageBroker(
     public Task Subscribe(string routingKey, Action<string, string> handler)
     {
         var groupId = $"{_options.ConsumerGroupId ?? "message-broker-group"}-{routingKey}";
-        var topic = _options.Topic ?? "event-bus";
+        var topic = _options.Topic;
         
         lock (_lock)
         {
@@ -143,7 +143,7 @@ internal class MessageBroker(
                     
                     // Check if this message matches our routing key
                     var messageRoutingKey = routingKey;
-                    bool shouldProcess = false;
+                    bool shouldProcess;
                     
                     // Check headers first
                     if (consumeResult.Message.Headers.TryGetLastBytes("routing-key", out var headerValue))

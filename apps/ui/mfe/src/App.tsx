@@ -2,14 +2,13 @@ import {
   GlobalProvider,
   RootContainer,
   DynamicContainer,
-  createDynamicContainer,
 } from "./core";
 import { ThemeSwitcher } from "components";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import "./App.css";
 
 // Create a specialized container for the messages microfrontend
-const Messages = createDynamicContainer("messages", "/messages");
+//const Messages = createDynamicContainer("messages", "/messages");
 
 const App = () => {
   return (

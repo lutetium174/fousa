@@ -1,0 +1,30 @@
+{
+  "name": "mfe",
+  "sourceRoot": "apps/ui/mfe",
+  "projectType": "application",
+  "tags": ["npm", "frontend", "micro-frontend"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev",
+        "cwd": "{workspaceRoot}/apps/ui/mfe"
+      }
+    },
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build",
+        "cwd": "{workspaceRoot}/apps/ui/mfe"
+      },
+      "outputs": ["{workspaceRoot}/apps/ui/mfe/dist"]
+    },
+    "preview": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "preview",
+        "cwd": "{workspaceRoot}/apps/ui/mfe"
+      }
+    }
+  }
+}

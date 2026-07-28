@@ -1,8 +1,6 @@
 import { createSignal } from "solid-js";
 import type { MicroFrontendEnvironment } from "./types/MicroFrontendEnvironment.ts";
 import "./App.css";
-import { Discoveries } from "./components/Discoveries.tsx";
-import { Following } from "./components/Following.tsx";
 import { Dynamic } from "solid-js/web";
 import {
   BookmarkIcon,
@@ -11,6 +9,8 @@ import {
   TabList,
   Tabs
 } from "components";
+import { Discoveries } from "./components/Discoveries.jsx";
+import { Following } from "./components/Following.jsx";
 
 type actions = "discover" | "following";
 

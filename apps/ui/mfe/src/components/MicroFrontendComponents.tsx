@@ -37,7 +37,7 @@ const NotificationsContainer = createDynamicContainer(
 export function MessageCreatorWidget() {
   return (
     <DynamicContainer
-      mfeUrl="http://localhost:5174/src/components/index.ts"
+      mfeName="http://localhost:5174/src/components/index.ts"
       componentName="MessageCreator"
       basePath="/messages"
       className="mfe-widget"
@@ -64,7 +64,7 @@ export function MessageListWidget(props: { limit: number }) {
 export function MessagesDashboard() {
   return (
     <BatchDynamicContainer
-      mfeUrl="http://localhost:5174/src/components/index.ts"
+      mfeName="http://localhost:5174/src/components/index.ts"
       basePath="/messages"
       className="messages-dashboard"
       components={[
@@ -132,7 +132,7 @@ export function SafeMessageCreator(props: {
 }) {
   return (
     <DynamicContainer
-      mfeUrl="http://localhost:5174/src/components/index.ts"
+      mfeName="http://localhost:5174/src/components/index.ts"
       componentName="MessageCreator"
       basePath="/messages"
       onError={props.onError}

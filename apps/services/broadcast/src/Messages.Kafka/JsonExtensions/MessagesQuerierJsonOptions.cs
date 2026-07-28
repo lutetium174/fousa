@@ -5,7 +5,7 @@ namespace Messages.Kafka.JsonExtensions;
 
 public static class MessagesQuerierJsonOptions
 {
-    public static readonly JsonSerializerOptions Options = new JsonSerializerOptions
+    public static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Converters = { new CultureInfoJsonConverter() }
@@ -13,10 +13,11 @@ public static class MessagesQuerierJsonOptions
 
     public static IServiceCollection ConfigureJsonOptions(this IServiceCollection services)
     {
-        return services.ConfigureHttpJsonOptions(options =>
+        services.Configure<JsonSerializerOptions>(options =>
         {
-            options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            options.SerializerOptions.Converters.Add(new CultureInfoJsonConverter());
+            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            options.Converters.Add(new CultureInfoJsonConverter());
         });
+        return services;
     }
 }

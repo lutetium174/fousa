@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Core;
 using Foundation;
@@ -13,59 +12,18 @@ namespace Mistral;
 /// Client for making requests to a local Mistral AI model running in Docker.
 /// Supports both Ollama-compatible endpoints and OpenAI-compatible endpoints.
 /// </summary>
-public sealed class MistralClient(
+public sealed partial class MistralClient(
     IOptions<MistralOptions> options,
     IHttpClientFactory httpClientFactory)
-    : IDisposable, ITranslator
+    : ITranslator
 {
     private readonly MistralOptions _options = options.Value;
     private readonly HttpClient _client = httpClientFactory.CreateClient(nameof(MistralClient));
-    private bool _disposed = false;
-
-    /// <summary>
-    /// Sends a chat completion request to the Mistral model.
-    /// Uses the Ollama-compatible /api/chat endpoint.
-    /// </summary>
-    /// <param name="request">The chat completion request.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The chat completion response.</returns>
-    public async Task<ChatCompletionResponse> CreateChatCompletionAsync(
-        ChatCompletionRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
-
-        if (string.IsNullOrWhiteSpace(request.Model))
-            throw new ArgumentException("Model name is required.", nameof(request));
-
-        if (request.Messages == null || request.Messages.Count == 0)
-            throw new ArgumentException("At least one message is required.", nameof(request));
-
-        var response = await _client.PostAsJsonAsync(
-            "/engines/v1/chat/completions",
-            request,
-            cancellationToken: cancellationToken);
-
-        response.EnsureSuccessStatusCode();
-
-        var result = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(
-            new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                Converters = { new UnixTimeConverter() }
-            },
-            cancellationToken);
-        return result ?? throw new JsonException("Failed to deserialize response.");
-    }
 
     /// <summary>
     /// Sends a chat completion request with a simple prompt.
     /// </summary>
-    /// <param name="model">The model name (e.g., "mistral", "llama2").</param>
     /// <param name="prompt">The user prompt.</param>
-    /// <param name="temperature">Sampling temperature (0.0 to 1.0).</param>
-    /// <param name="maxTokens">Maximum number of tokens to generate.</param>
     /// <param name="culture">The language to translate to.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The chat completion response.</returns>
@@ -77,7 +35,7 @@ public sealed class MistralClient(
         if (string.IsNullOrWhiteSpace(prompt))
             return new Error<string>("Prompt is required.");
 
-        var response = await CreateChatCompletionAsync(
+        var response = await ExecuteChatCompletionAsync(
             new()
             {
                 Model = "mistral",
@@ -86,9 +44,14 @@ public sealed class MistralClient(
                     new()
                     {
                         Role = "system",
-                        Content = Regex.Replace(_options.Instruction ?? "", "#{Language}#", culture.EnglishName)
+                        Content = ReplaceLanguageRegex()
+                            .Replace(_options.Instruction ?? "", culture.EnglishName)
                     },
-                    new() { Role = "user", Content = $"Translate text inside <TEXT>...</TEXT> into {culture.EnglishName}.\n\n<TEXT>{prompt}</TEXT>" }
+                    new()
+                    {
+                        Role = "user",
+                        Content = $"Translate text inside <TEXT>...</TEXT> into {culture.EnglishName}.\n\n<TEXT>{prompt}</TEXT>"
+                    }
                 ],
                 Temperature = _options.Temperature,
                 MaxTokens = _options.MaxTokens,
@@ -96,7 +59,7 @@ public sealed class MistralClient(
             },
             cancellationToken);
 
-        return new Result<string>(response.Choices?[0].Message.Content);
+        return new(response.Choices?[0].Message.Content);
     }
 
     /// <summary>
@@ -110,7 +73,7 @@ public sealed class MistralClient(
         var response = await _client.GetAsync("/api/tags", cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         try
@@ -142,36 +105,52 @@ public sealed class MistralClient(
             return false;
         }
     }
-
-    /// <summary>
-    /// Disposes the HTTP client.
-    /// </summary>
-    public void Dispose()
+    
+    private async Task<ChatCompletionResponse> ExecuteChatCompletionAsync(
+        ChatCompletionRequest request,
+        CancellationToken cancellationToken = default)
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+        ValidateRequest(request);
 
-    private void Dispose(bool disposing)
-    {
-        if (!_disposed)
-        {
-            if (disposing)
+        var response = await _client.PostAsJsonAsync(
+            "/engines/v1/chat/completions",
+            request,
+            cancellationToken: cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(
+            new JsonSerializerOptions
             {
-                _client.Dispose();
-            }
-
-            _disposed = true;
-        }
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                Converters = { new UnixTimeConverter() }
+            },
+            cancellationToken);
+        
+        return result ?? throw new JsonException("Failed to deserialize response.");
     }
 
-    private class OllamaTagsResponse
+    private static void ValidateRequest(ChatCompletionRequest request)
     {
-        [JsonPropertyName("models")] public List<OllamaModel>? Models { get; set; }
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.Model))
+            throw new ArgumentException("Model name is required.", nameof(request));
+
+        if (request.Messages == null || request.Messages.Count == 0)
+            throw new ArgumentException("At least one message is required.", nameof(request));
     }
 
-    public class OllamaModel
+    private record OllamaTagsResponse
     {
-        [JsonPropertyName("name")] public string? Name { get; set; }
+        public List<OllamaModel>? Models { get; init; }
     }
+
+    public record OllamaModel
+    {
+        public string? Name { get; set; }
+    }
+
+    [GeneratedRegex("#{Language}#")]
+    private static partial Regex ReplaceLanguageRegex();
 }

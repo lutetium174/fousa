@@ -5,6 +5,7 @@ import type {
 } from "./MicroFrontendTypes.ts";
 import { eventBus } from "./EventBus";
 import { globalContext } from "./GlobalContext";
+import type { Component } from "solid-js";
 
 const RUNTIME_VERSION = "1.0.0";
 
@@ -12,7 +13,7 @@ const RUNTIME_VERSION = "1.0.0";
 const moduleCache = new Map<string, MicroFrontendModule>();
 
 // Cache for loaded components
-const componentCache = new Map<string, Map<string, LoadedComponent>>();
+const componentCache = new Map<string, Map<string, LoadedComponent<any>>>();
 
 export async function loadMicroFrontend(url: string): Promise<MicroFrontendModule> {
   // Check cache first
@@ -72,7 +73,7 @@ export async function mountMicroFrontend(
 }
 
 // Load a specific component from a microfrontend module
-export async function loadComponentFromModule<T = unknown>(
+export async function loadComponentFromModule<T extends Record<string, any>>(
   url: string,
   componentName: string
 ): Promise<LoadedComponent<T>> {
@@ -100,9 +101,9 @@ export async function loadComponentFromModule<T = unknown>(
       componentCache.set(url, new Map());
     }
     
-    const loadedComponent: LoadedComponent<T> = {
+    const loadedComponent = {
       component,
-    };
+    } as LoadedComponent<T>;
     
     componentCache.get(url)!.set(componentName, loadedComponent);
     

@@ -3,7 +3,6 @@ import {
   useContext,
   createSignal,
   createResource,
-  createMemo,
   createEffect,
   type Accessor,
   type Setter,
@@ -23,11 +22,7 @@ type I18nContextType = {
   setLocale: Setter<Language>;
 };
 
-const I18nContext = createContext<I18nContextType>({
-  i18n: {} as Translator<BaseRecordDict, string>,
-  locale: () => "en",
-  setLocale: () => {},
-});
+const I18nContext = createContext<I18nContextType | null>(null);
 
 const dictionaries = {
   en: () => import("./dictionaries/en"),
@@ -53,7 +48,7 @@ export function I18nProvider(props: I18nProviderProps) {
     return flatten(mod.default);
   });
 
-  const i18n = createMemo(() => translator(() => dictionary()!))();
+  const i18n = translator(() => dictionary()!);
 
   createEffect(() => {
     props.onChange?.(locale());
@@ -68,7 +63,7 @@ export function I18nProvider(props: I18nProviderProps) {
 
 export const useI18n = () => {
   const context = useContext(I18nContext);
-  if (!context) {
+  if (context === null) {
     throw new Error("useI18n must be used within an I18nProvider");
   }
   return context;

@@ -27,7 +27,7 @@ export type MessageDetails = {
 const Message: Component<MessageDetails> = (props) => {
   return (
     <>
-      <section style={{ display: "flex", "flex-direction": "row", gap: "12px", alignItems: "center" }}>
+      <section style={{ display: "flex", "flex-direction": "row", gap: "12px" }}>
         <Avatar size="sm" />
         <p style={{ margin: 0 }}>{props.message}</p>
       </section>

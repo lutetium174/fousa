@@ -1,0 +1,13 @@
+﻿namespace Messages.Search;
+
+/// <summary>
+/// API response model for search
+/// </summary>
+public class SearchResponse<T>
+{
+    public IReadOnlyList<T> Results { get; set; } = Array.Empty<T>();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+}

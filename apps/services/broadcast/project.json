@@ -1,0 +1,37 @@
+{
+  "name": "broadcast-service",
+  "sourceRoot": "apps/services/broadcast",
+  "projectType": "application",
+  "tags": ["dotnet", "application", "service"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet build Broadcast.sln --configuration Release",
+        "cwd": "{workspaceRoot}/apps/services/broadcast"
+      },
+      "configurations": {
+        "Debug": {
+          "command": "dotnet build Broadcast.sln --configuration Debug",
+          "cwd": "{workspaceRoot}/apps/services/broadcast"
+        }
+      },
+      "outputs": ["{workspaceRoot}/apps/services/broadcast/src/App/bin", "{workspaceRoot}/apps/services/broadcast/src/Core/bin"]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet test Broadcast.sln",
+        "cwd": "{workspaceRoot}/apps/services/broadcast"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet run --project src/App/App.csproj",
+        "cwd": "{workspaceRoot}/apps/services/broadcast"
+      },
+      "dependsOn": ["build"]
+    }
+  }
+}

@@ -1,4 +1,6 @@
 packages:
-  - "mfe"
-  - "messages"
+  - "apps/ui/mfe"
+  - "apps/ui/messages"
+  - "frontend"
+  - "libs/components"
   

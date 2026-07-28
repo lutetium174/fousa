@@ -1,0 +1,30 @@
+{
+  "name": "frontend",
+  "sourceRoot": "frontend",
+  "projectType": "application",
+  "tags": ["npm", "frontend", "solid-js"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "dev",
+        "cwd": "{workspaceRoot}/frontend"
+      }
+    },
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build",
+        "cwd": "{workspaceRoot}/frontend"
+      },
+      "outputs": ["{workspaceRoot}/frontend/dist"]
+    },
+    "preview": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "preview",
+        "cwd": "{workspaceRoot}/frontend"
+      }
+    }
+  }
+}

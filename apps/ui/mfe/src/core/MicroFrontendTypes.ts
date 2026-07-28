@@ -1,7 +1,7 @@
 import type { IconProps } from "components";
 import type { EventBus } from "./EventBus";
 import type { GlobalContext } from "./GlobalContext";
-import type { Component, JSX } from "solid-js";
+import type { Component } from "solid-js";
 
 export type MicroFrontendEnv = {
   eventBus: EventBus;
@@ -35,13 +35,13 @@ export type MicroFrontendComponentDefinition<T = unknown> = {
   icon?: Component<IconProps>;
 };
 
-export type LoadedComponent<T = unknown> = {
+export type LoadedComponent<T extends Record<string, any>> = {
   component: Component<T>;
   unmount?: () => void | Promise<void>;
 };
 
-export type ComponentRegistry = {
+export type ComponentRegistry<T extends Record<string, any>> = {
   [mfeName: string]: {
-    [componentName: string]: LoadedComponent;
+    [componentName: string]: LoadedComponent<T>;
   };
 };
