@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core;
 using Messages.Search;
+using Messages.Search.Models;
 using Xunit;
 
 namespace Messages.Search.Test;
@@ -250,8 +251,9 @@ public class MessageQueryBuilderTests
         var query = builder.Build() as ParsedQuery;
         
         Assert.NotNull(query);
-        Assert.Equal(MessageSortField.CreatedAt, query.SortField);
-        Assert.Equal(SortDirection.Descending, query.SortDirection);
+        Assert.Single(query.SortFields);
+        Assert.Equal(MessageSortField.CreatedAt, query.SortFields[0].Field);
+        Assert.Equal(SortDirection.Descending, query.SortFields[0].Direction);
     }
 
     [Fact]
@@ -264,8 +266,11 @@ public class MessageQueryBuilderTests
         var query = builder.Build() as ParsedQuery;
         
         Assert.NotNull(query);
-        Assert.Equal(MessageSortField.CreatedAt, query.SortField);
-        Assert.Equal(SortDirection.Descending, query.SortDirection);
+        Assert.Equal(2, query.SortFields.Count);
+        Assert.Equal(MessageSortField.CreatedAt, query.SortFields[0].Field);
+        Assert.Equal(SortDirection.Descending, query.SortFields[0].Direction);
+        Assert.Equal(MessageSortField.Sender, query.SortFields[1].Field);
+        Assert.Equal(SortDirection.Ascending, query.SortFields[1].Direction);
     }
 
     [Fact]

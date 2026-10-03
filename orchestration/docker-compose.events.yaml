@@ -9,10 +9,11 @@ networks:
 
 services:
   traefik:
-    image: traefik:v2.10
+    image: traefik
     container_name: events-traefik
     hostname: traefik
     command:
+      - --log.level=DEBUG
       - --api.insecure=true
       - --providers.docker
       - --providers.docker.exposedbydefault=false
@@ -24,9 +25,15 @@ services:
       - "443:443"
       - "8080:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - //var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      kafka-ui:
+        condition: service_started
+      pinot-controller:
+        condition: service_started
     networks:
       - events-network
+
   kafka:
     image: apache/kafka:latest
     container_name: kafka
@@ -52,6 +59,12 @@ services:
       KAFKA_MIN_INSYNC_REPLICAS: 1
     volumes:
       - kafka_data:/opt/kafka/data/kraft-combined-logs
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - events-network
 
@@ -84,6 +97,12 @@ services:
     volumes:
       - zookeeper_data:/data
       - zookeeper_log:/datalog
+    healthcheck:
+      test: ["CMD", "echo", "stat | nc 127.0.0.1 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - events-network
 
@@ -98,16 +117,22 @@ services:
     environment:
       PINOT_ZK_ADDRESS: zookeeper:2181
       PINOT_CONTROLLER_HOST: 172.19.0.6
-      PINOT_CONTROLLER_PORT: 9000
+      JAVA_OPTS: "-Xms256m -Xmx1g --enable-native-access=ALL-UNNAMED"
     volumes:
       - ./pinot/data:/data
       - ./pinot/config:/config
-    command: "StartController -zkAddress zookeeper:2181"
+    command: "StartController -zkAddress zookeeper:2181 -controllerPort 9000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pinot-controller.rule=Host(`pinot.local`)"
       - "traefik.http.routers.pinot-controller.entrypoints=web"
       - "traefik.http.services.pinot-controller.loadbalancer.server.port=9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       events-network:
         ipv4_address: 172.19.0.6
@@ -126,6 +151,7 @@ services:
       PINOT_CONTROLLER_HOST: 172.19.0.6
       PINOT_CONTROLLER_PORT: 9000
       PINOT_BROKER_HOST: pinot-broker
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -XX:+UseParallelGC -XX:TieredStopAtLevel=1 --enable-native-access=ALL-UNNAMED"
     networks:
       events-network:
         ipv4_address: 172.19.0.7
@@ -136,6 +162,7 @@ services:
     hostname: pinot-server
     command: "StartServer -zkAddress zookeeper:2181"
     ports:
+      - "8097:8097"
       - "8098:8098"
     depends_on:
       - pinot-broker
@@ -153,7 +180,12 @@ services:
     container_name: pinot-init
     hostname: pinot-init
     depends_on:
-      - pinot-server
+      pinot-server:
+        condition: service_started
+      pinot-controller:
+        condition: service_healthy
+      pinot-broker:
+        condition: service_healthy
     volumes:
       - ./pinot/config:/config
     entrypoint: ["sh", "-c"]

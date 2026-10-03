@@ -9,7 +9,6 @@ using Foundation;
 using Messages.Kafka.JsonExtensions;
 using Messages.Kafka.Models;
 using Microsoft.Extensions.Options;
-using Message = Messages.Kafka.Models.Message;
 
 namespace Messages.Kafka;
 
@@ -51,13 +50,13 @@ public class MessagesQuerier(
         var effectiveLimit = filter.Limit ?? 1000; // Prevent unbounded result sets
 
         // If Pinot is configured, use Pinot for lookup
-        if (_pinotOptions != null && !string.IsNullOrEmpty(_pinotOptions.ControllerUri))
+        if (!string.IsNullOrEmpty(_pinotOptions.ControllerUri))
         {
             return await QueryPinotWithLinq(filter, effectiveLimit, cancellationToken);
         }
 
         // Fallback to Kafka consumer for lookup
-        var topic = _kafkaOptions.Topic ?? "messages";
+        var topic = _kafkaOptions.Topic;
         var results = new List<MessageResponse>();
         await QueryKafka(topic, results, filter, effectiveLimit, cancellationToken);
 

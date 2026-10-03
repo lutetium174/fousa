@@ -1,11 +1,11 @@
 ﻿using System.Text;
 using System.Text.Json;
-using Core;
+using Foundation.EventBus.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace EventBus.Rabbit;
+namespace Foundation.EventBus.Rabbit;
 
 public class EventBus([FromKeyedServices(nameof(RabbitMQ))]IConnectionFactory factory): IMessageBroker
 {

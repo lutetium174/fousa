@@ -1,6 +1,7 @@
-﻿using Core;
+﻿using System.Linq.Expressions;
+using Core;
 
-namespace Messages.Search;
+namespace Messages.Search.Models;
 
 /// <summary>
 /// Represents a parsed query with all its components
@@ -8,16 +9,16 @@ namespace Messages.Search;
 public class ParsedQuery : IMessageQuery
 {
     public string OriginalQuery { get; set; } = string.Empty;
-    public List<QueryToken> Tokens { get; set; } = new();
-    public List<string> FreeTextTerms { get; set; } = new();
-    public List<string> Phrases { get; set; } = new();
+    public List<QueryToken> Tokens { get; set; } = [];
+    public List<string> FreeTextTerms { get; set; } = [];
+    public List<string> Phrases { get; set; } = [];
     
     // Parsed filter values
-    public List<string> FromParticipants { get; set; } = new();
-    public List<string> ToParticipants { get; set; } = new();
-    public List<string> InvolvingParticipants { get; set; } = new();
-    public List<string> Channels { get; set; } = new();
-    public List<MessageStatus> Statuses { get; set; } = new();
+    public List<string> FromParticipants { get; set; } = [];
+    public List<string> ToParticipants { get; set; } = [];
+    public List<string> InvolvingParticipants { get; set; } = [];
+    public List<string> Channels { get; set; } = [];
+    public List<MessageStatus> Statuses { get; set; } = [];
     public List<string> Tags { get; set; } = new();
     public List<string> AnyTags { get; set; } = new();
     public List<string> AllTags { get; set; } = new();
@@ -29,13 +30,37 @@ public class ParsedQuery : IMessageQuery
     public SizeFilter? SizeFilter { get; set; }
     
     // Sorting and pagination
-    public MessageSortField? SortField { get; set; }
-    public SortDirection SortDirection { get; set; } = SortDirection.Ascending;
+    public List<(MessageSortField Field, SortDirection Direction)> SortFields { get; } = [];
+    public Expression<Func<Message, bool>>? Predicate { get; }
+    public List<(Expression<Func<Message, object>> KeySelector, SortDirection Direction)> SortExpressions { get; }
+    public Expression<Func<Message, object>>? Selector { get; }
     public int? Limit { get; set; }
     public int? Offset { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
-    
+    public string[] Includes { get; }
+    public IMessageQuery And(IMessageQuery other)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IMessageQuery Or(IMessageQuery other)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IMessageQuery Not()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IQueryable<Message> ApplyTo(IQueryable<Message> source)
+    {
+        throw new NotImplementedException();
+    }
+
     // Boolean structure (for complex queries with AND/OR/NOT)
-    public List<QueryClause> Clauses { get; } = new();
+    public List<QueryClause> Clauses { get; } = [];
+    public string SortField { get; set; } = string.Empty;
+    public string SortDirection { get; set; } = string.Empty;
 }

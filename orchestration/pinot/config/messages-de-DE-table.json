@@ -1,5 +1,5 @@
 {
-  "tableName": "messages",
+  "tableName": "messages-de-DE",
   "tableType": "REALTIME",
   "tenants": {
     "broker": "DefaultTenant",
@@ -37,7 +37,7 @@
     "nullHandlingEnabled": false,
     "streamConfigs": {
       "streamType": "kafka",
-      "stream.kafka.topic.name": "messages",
+      "stream.kafka.topic.name": "messages-de-DE",
       "stream.kafka.broker.list": "kafka:9092",
       "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
       "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka30.KafkaConsumerFactory",

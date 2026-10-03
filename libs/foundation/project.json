@@ -16,20 +16,29 @@
           "cwd": "libs/foundation"
         }
       },
-      "outputs": ["{workspaceRoot}/libs/foundation/src/Foundation/bin", "{workspaceRoot}/libs/foundation/src/Foundation.DependencyInjection.Web/bin"]
+      "outputs": [
+        "{workspaceRoot}/libs/foundation/src/Foundation/bin",
+        "{workspaceRoot}/libs/foundation/src/Foundation.DependencyInjection.Web/bin",
+        "{workspaceRoot}/libs/foundation/src/Foundation.EventBus/bin",
+        "{workspaceRoot}/libs/foundation/src/Foundation.EventBus.Abstractions/bin",
+        "{workspaceRoot}/libs/foundation/src/Foundation.EventBus.Rabbit/bin"
+      ]
     },
     "pack": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "dotnet pack src/Foundation/Foundation.csproj -c Release -o dist/libs/foundation",
-          "dotnet pack src/Foundation.DependencyInjection.Web/Foundation.DependencyInjection.Web.csproj -c Release -o dist/libs/foundation"
+          "dotnet pack src/Foundation/Foundation.csproj -c Release -o nupkg",
+          "dotnet pack src/Foundation.DependencyInjection.Web/Foundation.DependencyInjection.Web.csproj -c Release -o nupkg",
+          "dotnet pack src/Foundation.EventBus.Abstractions/Foundation.EventBus.Abstractions.csproj -c Release -o nupkg",
+          "dotnet pack src/Foundation.EventBus/Foundation.EventBus.csproj -c Release -o nupkg",
+          "dotnet pack src/Foundation.EventBus.Rabbit/Foundation.EventBus.Rabbit.csproj -c Release -o nupkg"
         ],
         "cwd": "{workspaceRoot}/libs/foundation",
         "parallel": false
       },
       "dependsOn": ["build"],
-      "outputs": ["{workspaceRoot}/dist/libs/foundation"]
+      "outputs": ["{workspaceRoot}/nupkg"]
     },
     "test": {
       "executor": "nx:run-commands",

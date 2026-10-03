@@ -245,8 +245,9 @@ public class QueryParserTests
     public void Parse_SortOperator_ExtractsSortField()
     {
         var result = _parser.Parse("sort:createdat,desc");
-        Assert.Equal(MessageSortField.CreatedAt, result.SortField);
-        Assert.Equal(SortDirection.Descending, result.SortDirection);
+        Assert.Single(result.SortFields);
+        Assert.Equal(MessageSortField.CreatedAt, result.SortFields[0].Field);
+        Assert.Equal(SortDirection.Descending, result.SortFields[0].Direction);
     }
 
     // Pagination operators

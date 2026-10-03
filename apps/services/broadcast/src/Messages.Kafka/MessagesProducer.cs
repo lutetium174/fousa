@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Core;
 using Core.Broker;
 
@@ -7,7 +6,7 @@ namespace Messages.Kafka;
 
 public class MessagesProducer(ProducerFactory factory) : IMessagesProducer
 {
-    public async Task Write(Core.Message message, CancellationToken cancellationToken)
+    public async Task Write(Message message, CancellationToken cancellationToken)
     {
         var id = Guid.NewGuid();
 

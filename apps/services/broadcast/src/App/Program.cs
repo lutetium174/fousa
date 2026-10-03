@@ -1,12 +1,11 @@
 using Core;
 using Core.Broker;
-using Foundation;
 using Foundation.DependencyInjection.Web;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication
     .CreateBuilder(args)
-    .AddModule<EventBus.Rabbit.Module>()
+    .AddModule<Foundation.EventBus.Rabbit.Module>()
     .AddModule<Messages.Kafka.Module>();
 
 if (builder.Environment.IsDevelopment())

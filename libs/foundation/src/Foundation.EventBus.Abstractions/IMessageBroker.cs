@@ -1,4 +1,4 @@
-﻿namespace Core;
+﻿namespace Foundation.EventBus.Abstractions;
 
 public interface IMessageBroker
 {
@@ -8,6 +8,4 @@ public interface IMessageBroker
     Task Subscribe(string routingKey, Action<string, string> handler);
 }
 
-public class DomainEvent
-{
-}
+public record DomainEvent;

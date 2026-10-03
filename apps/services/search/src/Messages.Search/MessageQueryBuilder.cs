@@ -1,87 +1,144 @@
-﻿using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using Core;
 
 namespace Messages.Search;
 
+/// <summary>
+/// Extension methods for IMessageQueryBuilder to work with different data sources
+/// </summary>
+public static class MessageQueryBuilderExtensions
+{
+    /// <summary>
+    /// Executes the query against the specified repository
+    /// </summary>
+    public static async Task<IReadOnlyList<Message>> ExecuteAsync(
+        this IMessageQueryBuilder builder,
+        IRepository<Message> repository,
+        CancellationToken ct = default)
+    {
+        var query = builder.Build();
+        var queryable = query.ApplyTo(repository.Query());
+
+        // For in-memory collections, execute immediately
+        if (queryable is IEnumerable<Message> enumerable)
+        {
+            await Task.CompletedTask;
+            return enumerable.ToList().AsReadOnly();
+        }
+
+        // For RDBMS, materialize the results
+        return await Task.FromResult(queryable.ToList().AsReadOnly());
+    }
+
+    /// <summary>
+    /// Translates the query to the specified analytical store's query language
+    /// </summary>
+    public static string TranslateTo<TAdaptor>(this IMessageQueryBuilder builder, TAdaptor adaptor)
+        where TAdaptor : Messages.Search.AnalyticalStore.IAnalyticalStoreAdaptor<Message>
+        => builder.Build() is not LinqMessageQuery linqQuery
+            ? string.Empty
+            : adaptor.TranslateQuery(linqQuery.ApplyTo(new List<Message>().AsQueryable()));
+}
+
+/// <summary>
+/// LINQ-based message query builder that constructs expression trees
+/// for query translation to SQL by RDBMS providers
+/// </summary>
 public class MessageQueryBuilder : IMessageQueryBuilder
 {
-    private readonly ParsedQuery _parsedQuery = new();
-    private readonly List<Expression<Func<Core.Message, bool>>> _filters = new();
-    private readonly List<(MessageSortField Field, SortDirection Direction)> _sortFields = new();
-    private int? _takeCount;
-    private int? _skipCount;
+    private readonly LinqMessageQuery _query = new();
+    private List<string> _includes = new();
+    private List<Expression<Func<Message, bool>>> _currentContext = new();
+    private bool _isNegatedContext = false;
 
     public MessageQueryBuilder()
     {
-    }
-
-    public MessageQueryBuilder(ParsedQuery parsedQuery)
-    {
-        _parsedQuery = parsedQuery;
     }
 
     // === Content Filtering ===
 
     public IMessageQueryBuilder WithText(string exactText)
     {
-        _parsedQuery.Phrases.Add(exactText);
-        _filters.Add(m => m.Subject.Contains(exactText) || m.Body.Contains(exactText));
+        var predicate = CreateTextPredicate(m =>
+            m.Subject.Equals(exactText, StringComparison.OrdinalIgnoreCase) ||
+            m.Body.Equals(exactText, StringComparison.OrdinalIgnoreCase));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder ContainingText(string text)
     {
-        _parsedQuery.FreeTextTerms.Add(text);
-        _filters.Add(m => m.Subject.Contains(text) || m.Body.Contains(text));
+        var predicate = CreateTextPredicate(m =>
+            m.Subject.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+            m.Body.Contains(text, StringComparison.OrdinalIgnoreCase));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder MatchingPattern(Regex pattern)
     {
-        _filters.Add(m => pattern.IsMatch(m.Subject) || pattern.IsMatch(m.Body));
+        var predicate = CreateTextPredicate(m =>
+            pattern.IsMatch(m.Subject) || pattern.IsMatch(m.Body));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder MatchingWildcard(string pattern)
     {
+        // Convert wildcard to regex
         var regexPattern = pattern
             .Replace("*", ".*")
             .Replace("?", ".")
-            .Replace(".", "\\.");
-        var regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
-        _filters.Add(m => regex.IsMatch(m.Subject) || regex.IsMatch(m.Body));
-        return this;
+            .Replace("[", "[")
+            .Replace("]", "]");
+
+        try
+        {
+            var regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
+            return MatchingPattern(regex);
+        }
+        catch
+        {
+            // Fallback to contains if regex fails
+            return ContainingText(pattern.Replace("*", "").Replace("?", ""));
+        }
     }
 
     // === Temporal Filtering ===
 
     public IMessageQueryBuilder CreatedAfter(DateTimeOffset date)
     {
-        _parsedQuery.CreatedRange = new TimeRange { Start = date };
-        _filters.Add(m => m.CreatedAt >= date);
+        var predicate = PredicateBuilder.Create<Message>(m => m.CreatedAt >= date);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder CreatedBefore(DateTimeOffset date)
     {
-        _parsedQuery.CreatedRange = new TimeRange { End = date };
-        _filters.Add(m => m.CreatedAt <= date);
+        var predicate = PredicateBuilder.Create<Message>(m => m.CreatedAt <= date);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder CreatedBetween(DateTimeOffset start, DateTimeOffset end)
     {
-        _parsedQuery.CreatedRange = new TimeRange { Start = start, End = end };
-        _filters.Add(m => m.CreatedAt >= start && m.CreatedAt <= end);
+        var predicate = PredicateBuilder.Create<Message>(m => m.CreatedAt >= start && m.CreatedAt <= end);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder ModifiedAfter(DateTimeOffset date)
     {
-        _parsedQuery.ModifiedRange = new TimeRange { Start = date };
-        _filters.Add(m => m.ModifiedAt >= date);
+        var predicate = PredicateBuilder.Create<Message>(m => m.ModifiedAt >= date);
+        AddPredicate(predicate);
+        return this;
+    }
+
+    public IMessageQueryBuilder ModifiedBefore(DateTimeOffset date)
+    {
+        var predicate = PredicateBuilder.Create<Message>(m => m.ModifiedAt <= date);
+        AddPredicate(predicate);
         return this;
     }
 
@@ -89,39 +146,45 @@ public class MessageQueryBuilder : IMessageQueryBuilder
 
     public IMessageQueryBuilder FromParticipant(string participantId)
     {
-        _parsedQuery.FromParticipants.Add(participantId);
-        _filters.Add(m => m.SenderId == participantId);
+        var predicate = PredicateBuilder.Create<Message>(m => m.SenderId == participantId);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder ToParticipant(string participantId)
     {
-        _parsedQuery.ToParticipants.Add(participantId);
-        _filters.Add(m => m.RecipientIds.Contains(participantId));
+        var predicate = PredicateBuilder.Create<Message>(m => m.RecipientIds.Contains(participantId));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder Involving(string participantId)
     {
-        _parsedQuery.InvolvingParticipants.Add(participantId);
-        _filters.Add(m => m.SenderId == participantId || m.RecipientIds.Contains(participantId));
+        var predicate = PredicateBuilder.Create<Message>(m =>
+            m.SenderId == participantId || m.RecipientIds.Contains(participantId));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder InvolvingAny(params string[] participantIds)
     {
-        foreach (var id in participantIds)
-            _parsedQuery.InvolvingParticipants.Add(id);
-        _filters.Add(m => participantIds.Contains(m.SenderId) || m.RecipientIds.Any(participantIds.Contains));
+        if (participantIds.Length == 0) return this;
+
+        var predicate = PredicateBuilder.Create<Message>(m =>
+            participantIds.Contains(m.SenderId) ||
+            m.RecipientIds.Any(r => participantIds.Contains(r)));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder InvolvingAll(params string[] participantIds)
     {
-        foreach (var id in participantIds)
-            _parsedQuery.InvolvingParticipants.Add(id);
-        _filters.Add(m => 
-            participantIds.All(id => m.SenderId == id || m.RecipientIds.Contains(id)));
+        if (participantIds.Length == 0) return this;
+
+        var predicate = PredicateBuilder.Create<Message>(m =>
+            participantIds.All(p =>
+                m.SenderId == p || m.RecipientIds.Contains(p)));
+        AddPredicate(predicate);
         return this;
     }
 
@@ -129,16 +192,17 @@ public class MessageQueryBuilder : IMessageQueryBuilder
 
     public IMessageQueryBuilder InChannel(string channelId)
     {
-        _parsedQuery.Channels.Add(channelId);
-        _filters.Add(m => m.ChannelId == channelId);
+        var predicate = PredicateBuilder.Create<Message>(m => m.ChannelId == channelId);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder InAnyChannel(params string[] channelIds)
     {
-        foreach (var id in channelIds)
-            _parsedQuery.Channels.Add(id);
-        _filters.Add(m => channelIds.Contains(m.ChannelId));
+        if (channelIds.Length == 0) return this;
+
+        var predicate = PredicateBuilder.Create<Message>(m => channelIds.Contains(m.ChannelId));
+        AddPredicate(predicate);
         return this;
     }
 
@@ -146,230 +210,343 @@ public class MessageQueryBuilder : IMessageQueryBuilder
 
     public IMessageQueryBuilder WithStatus(MessageStatus status)
     {
-        _parsedQuery.Statuses.Add(status);
-        _filters.Add(m => m.Status == status);
+        var predicate = PredicateBuilder.Create<Message>(m => m.Status == status);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder WithAnyStatus(params MessageStatus[] statuses)
     {
-        foreach (var status in statuses)
-            _parsedQuery.Statuses.Add(status);
-        _filters.Add(m => statuses.Contains(m.Status));
+        if (statuses.Length == 0) return this;
+
+        var predicate = PredicateBuilder.Create<Message>(m => statuses.Contains(m.Status));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder IsPinned(bool pinned = true)
     {
-        _parsedQuery.IsPinned = pinned;
-        _filters.Add(m => m.IsPinned == pinned);
+        var predicate = PredicateBuilder.Create<Message>(m => m.IsPinned == pinned);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder HasAttachments(bool hasAttachments = true)
     {
-        _parsedQuery.HasFeatures.Add("attachments");
-        _filters.Add(m => m.HasAttachments == hasAttachments);
+        var predicate = PredicateBuilder.Create<Message>(m => m.HasAttachments == hasAttachments);
+        AddPredicate(predicate);
+        return this;
+    }
+
+    public IMessageQueryBuilder HasLinks(bool hasLinks = true)
+    {
+        var predicate = PredicateBuilder.Create<Message>(m => m.HasLinks == hasLinks);
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder WithTag(string tag)
     {
-        _parsedQuery.Tags.Add(tag);
-        _filters.Add(m => m.Tags.Contains(tag));
+        var predicate = PredicateBuilder.Create<Message>(m => m.Tags.Contains(tag));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder WithAnyTag(params string[] tags)
     {
-        foreach (var tag in tags)
-            _parsedQuery.AnyTags.Add(tag);
-        _filters.Add(m => m.Tags.Any(tags.Contains));
+        if (tags.Length == 0) return this;
+
+        var predicate = PredicateBuilder.Create<Message>(m =>
+            m.Tags.Any(t => tags.Contains(t)));
+        AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder WithAllTags(params string[] tags)
     {
-        foreach (var tag in tags)
-            _parsedQuery.AllTags.Add(tag);
-        _filters.Add(m => tags.All(m.Tags.Contains));
+        if (tags.Length == 0) return this;
+
+        var predicate = PredicateBuilder.Create<Message>(m =>
+            tags.All(t => m.Tags.Contains(t)));
+        AddPredicate(predicate);
         return this;
+    }
+
+    public IMessageQueryBuilder WithSize( Core.SizeComparison comparison, long bytes)
+    {
+        Expression<Func<Message, bool>> predicate = comparison switch
+        {
+             Core.SizeComparison.Equal => m => m.SizeInBytes == bytes,
+             Core.SizeComparison.GreaterThan => m => m.SizeInBytes > bytes,
+             Core.SizeComparison.GreaterThanOrEqual => m => m.SizeInBytes >= bytes,
+             Core.SizeComparison.LessThan => m => m.SizeInBytes < bytes,
+             Core.SizeComparison.LessThanOrEqual => m => m.SizeInBytes <= bytes,
+            _ => m => m.SizeInBytes == bytes
+        };
+        AddPredicate(predicate);
+        return this;
+    }
+
+    public IMessageQueryBuilder WithSizeInBytes(long bytes)
+    {
+        return WithSize( Core.SizeComparison.Equal, bytes);
     }
 
     // === Boolean Composition ===
 
     public IMessageQueryBuilder And(Func<IMessageQueryBuilder, IMessageQueryBuilder> builder)
     {
+        // Save current context
+        var savedPredicates = new List<Expression<Func<Message, bool>>>(_currentContext);
+        var savedNegation = _isNegatedContext;
+
+        // Start new AND context
+        _currentContext.Clear();
+
+        // Build the sub-query
         var subBuilder = new MessageQueryBuilder();
         builder(subBuilder);
-        var subFilter = subBuilder.Build() as ParsedQuery;
-        if (subFilter != null)
+        var subQuery = subBuilder.Build() as LinqMessageQuery;
+
+        if (subQuery != null)
         {
-            // Combine filters with AND
-            var andClause = new QueryClause { Operator = BooleanOperator.And };
-            andClause.Tokens.AddRange(subFilter.Tokens);
-            _parsedQuery.Clauses.Add(andClause);
-            _filters.AddRange(subBuilder._filters);
+            // Get the sub-query predicate
+            subQuery.CompilePredicate();
+            if (subQuery.Predicate != null)
+            {
+                _currentContext.Add(subQuery.Predicate);
+            }
         }
+
+        // Restore and combine
+        _currentContext.InsertRange(0, savedPredicates);
+        _isNegatedContext = savedNegation;
+
         return this;
     }
 
     public IMessageQueryBuilder Or(Func<IMessageQueryBuilder, IMessageQueryBuilder> builder)
     {
+        // Build the sub-query
         var subBuilder = new MessageQueryBuilder();
         builder(subBuilder);
-        var subFilter = subBuilder.Build() as ParsedQuery;
-        if (subFilter != null)
+        var subQuery = subBuilder.Build() as LinqMessageQuery;
+
+        if (subQuery != null)
         {
-            // Combine filters with OR
-            var orClause = new QueryClause { Operator = BooleanOperator.Or };
-            orClause.Tokens.AddRange(subFilter.Tokens);
-            _parsedQuery.Clauses.Add(orClause);
-            // For OR, we need to add a disjunction to filters
-            var subFilters = subBuilder._filters;
-            if (subFilters.Count > 0 && _filters.Count > 0)
+            // Get the sub-query predicate
+            subQuery.CompilePredicate();
+            if (subQuery.Predicate != null)
             {
-                // Combine existing filters with OR
-                var existingFilters = _filters.ToArray();
-                var newFilters = subFilters.ToArray();
-                _filters.Clear();
-                _filters.Add(m => existingFilters.Any(f => f.Compile()(m)) || newFilters.Any(f => f.Compile()(m)));
-            }
-            else
-            {
-                _filters.AddRange(subFilters);
+                // For OR, we need to add the current predicates as OR conditions
+                var orPredicate = CombinePredicatesWithOr(_currentContext, subQuery.Predicate);
+                _currentContext.Clear();
+                _currentContext.Add(orPredicate);
             }
         }
+
         return this;
     }
 
     public IMessageQueryBuilder Not(Func<IMessageQueryBuilder, IMessageQueryBuilder> builder)
     {
+        // Save current negation state
+        var savedNegation = _isNegatedContext;
+
+        // Start negated context
+        _isNegatedContext = true;
+
+        // Build the sub-query
         var subBuilder = new MessageQueryBuilder();
         builder(subBuilder);
-        var subFilter = subBuilder.Build() as ParsedQuery;
-        if (subFilter != null)
+        var subQuery = subBuilder.Build() as LinqMessageQuery;
+
+        if (subQuery != null)
         {
-            var notClause = new QueryClause { Operator = BooleanOperator.And, IsNegated = true };
-            notClause.Tokens.AddRange(subFilter.Tokens);
-            _parsedQuery.Clauses.Add(notClause);
-            // Negate the sub filters
-            var subFilters = subBuilder._filters;
-            if (subFilters.Count > 0)
+            // Get the sub-query predicate
+            subQuery.CompilePredicate();
+            if (subQuery.Predicate != null)
             {
-                _filters.Add(m => !subFilters.Any(f => f.Compile()(m)));
+                // Negate the predicate
+                var negated = PredicateBuilder.Not(subQuery.Predicate);
+                _currentContext.Add(negated);
             }
         }
+
+        // Restore negation state
+        _isNegatedContext = savedNegation;
+
         return this;
+    }
+
+    private Expression<Func<Message, bool>> CombinePredicatesWithOr(
+        List<Expression<Func<Message, bool>>> predicates,
+        Expression<Func<Message, bool>> additionalPredicate)
+    {
+        if (predicates.Count == 0)
+            return additionalPredicate;
+
+        if (predicates.Count == 1)
+        {
+            return PredicateBuilder.Or(predicates[0], additionalPredicate);
+        }
+
+        // Combine all predicates with OR
+        var combined = predicates[0];
+        for (int i = 1; i < predicates.Count; i++)
+        {
+            combined = PredicateBuilder.Or(combined, predicates[i]);
+        }
+
+        return PredicateBuilder.Or(combined, additionalPredicate);
     }
 
     // === Sorting & Pagination ===
 
     public IMessageQueryBuilder OrderBy(MessageSortField field, SortDirection direction = SortDirection.Ascending)
     {
-        _parsedQuery.SortField = field;
-        _parsedQuery.SortDirection = direction;
-        _sortFields.Add((field, direction));
+        var keySelector = GetSortExpression(field);
+        _query.SetSorting(new List<(Expression<Func<Message, object>> KeySelector, SortDirection Direction)>
+        {
+            (keySelector, direction)
+        });
         return this;
     }
 
     public IMessageQueryBuilder ThenBy(MessageSortField field, SortDirection direction = SortDirection.Ascending)
     {
-        _sortFields.Add((field, direction));
+        var keySelector = GetSortExpression(field);
+        _query.ThenSort(keySelector, direction);
         return this;
     }
 
     public IMessageQueryBuilder Take(int count)
     {
-        _takeCount = count;
-        _parsedQuery.Limit = count;
+        _query.SetPagination(_query.Limit, _query.Offset, _query.Page, count);
         return this;
     }
 
     public IMessageQueryBuilder Skip(int count)
     {
-        _skipCount = count;
-        _parsedQuery.Offset = count;
+        _query.SetPagination(_query.Limit, count, _query.Page, _query.PageSize);
         return this;
     }
 
     public IMessageQueryBuilder Page(int pageNumber, int pageSize)
     {
-        _skipCount = (pageNumber - 1) * pageSize;
-        _takeCount = pageSize;
-        _parsedQuery.Page = pageNumber;
-        _parsedQuery.PageSize = pageSize;
+        _query.SetPagination(null, null, pageNumber, pageSize);
         return this;
     }
 
     // === Projection ===
 
-    public IMessageQueryBuilder Select<TResult>(Expression<Func<Core.Message, TResult>> selector)
+    public IMessageQueryBuilder Select<TResult>(Expression<Func<Message, TResult>> selector)
     {
-        // Projection is not implemented in this version
-        // The selector is stored for future use
+        _query.SetSelector(selector);
+        return this;
+    }
+
+    // === Includes for ORM Navigation Properties ===
+
+    public IMessageQueryBuilder Include(string path)
+    {
+        if (!_includes.Contains(path))
+            _includes.Add(path);
+        return this;
+    }
+
+    public IMessageQueryBuilder Include(params string[] paths)
+    {
+        foreach (var path in paths)
+        {
+            if (!_includes.Contains(path))
+                _includes.Add(path);
+        }
+
         return this;
     }
 
     // === Finalization ===
 
-    Core.IMessageQuery IMessageQueryBuilder.Build()
+    public IMessageQuery Build()
     {
-        return _parsedQuery;
+        // Compile all predicates
+        CompileAllPredicates();
+        _query.SetIncludes(_includes.ToArray());
+        return _query;
     }
 
-    public Core.IMessageQuery Build()
+    public Expression<Func<Message, bool>> BuildPredicate()
     {
-        return _parsedQuery;
+        Build();
+        return _query.Predicate ?? (m => true);
     }
 
-    // Helper method to compile the query into a predicate
-    internal Func<Core.Message, bool> CompilePredicate()
+    public IMessageQueryBuilder Clear()
     {
-        if (_filters.Count == 0)
-            return _ => true;
-        
-        var compiledFilters = _filters.Select(f => f.Compile()).ToArray();
-        return m => compiledFilters.All(f => f(m));
+        _currentContext.Clear();
+        _isNegatedContext = false;
+        _includes.Clear();
+        // Note: We don't clear _query because it might be reused
+        // Instead, we create a new query state
+        return this;
     }
 
-    internal IEnumerable<Core.Message> ApplyTo(IEnumerable<Core.Message> messages)
+    public IMessageQueryBuilder Clone()
     {
-        var predicate = CompilePredicate();
-        var filtered = messages.Where(predicate);
-        
-        // Apply sorting
-        IOrderedEnumerable<Core.Message>? ordered = null;
-        if (_sortFields.Count > 0)
+        var clone = new MessageQueryBuilder();
+        // Copy the current state
+        clone._currentContext.AddRange(_currentContext);
+        clone._isNegatedContext = _isNegatedContext;
+        clone._includes.AddRange(_includes);
+        return clone;
+    }
+
+    public IMessageQueryBuilder ForRepository(IRepository<Message> repository)
+    {
+        // Note: The repository is not stored in the builder itself
+        // This method is here for interface completeness
+        // The actual repository is used when building and executing the query
+        return this;
+    }
+
+    public IMessageQueryBuilder ForAnalyticalStore<TAdaptor>(TAdaptor adaptor) where TAdaptor : class
+    {
+        // Note: The adaptor is not stored in the builder itself
+        // This method is here for interface completeness
+        // The actual adaptor is used when translating the query
+        return this;
+    }
+
+    private void CompileAllPredicates()
+    {
+        // Add all current context predicates to the query
+        foreach (var predicate in _currentContext)
         {
-            var firstSort = _sortFields[0];
-            var firstSortKey = GetSortKey(firstSort.Field);
-            ordered = firstSort.Direction == SortDirection.Ascending
-                ? filtered.OrderBy(firstSortKey)
-                : filtered.OrderByDescending(firstSortKey);
-            
-            for (int i = 1; i < _sortFields.Count; i++)
-            {
-                var sort = _sortFields[i];
-                var sortKey = GetSortKey(sort.Field);
-                ordered = sort.Direction == SortDirection.Ascending
-                    ? ordered.ThenBy(sortKey)
-                    : ordered.ThenByDescending(sortKey);
-            }
-            
-            filtered = ordered;
+            _query.AddPredicate(predicate, true);
         }
-        
-        // Apply pagination
-        if (_skipCount.HasValue)
-            filtered = filtered.Skip(_skipCount.Value);
-        if (_takeCount.HasValue)
-            filtered = filtered.Take(_takeCount.Value);
-        
-        return filtered.ToList();
+
+        _query.CompilePredicate();
     }
 
-    private Func<Core.Message, object> GetSortKey(MessageSortField field)
+    private void AddPredicate(Expression<Func<Message, bool>> predicate)
+    {
+        if (_isNegatedContext)
+        {
+            _currentContext.Add(PredicateBuilder.Not(predicate));
+        }
+        else
+        {
+            _currentContext.Add(predicate);
+        }
+    }
+
+    private Expression<Func<Message, bool>> CreateTextPredicate(Expression<Func<Message, bool>> basePredicate)
+    {
+        return basePredicate;
+    }
+
+    private Expression<Func<Message, object>> GetSortExpression(MessageSortField field)
     {
         return field switch
         {

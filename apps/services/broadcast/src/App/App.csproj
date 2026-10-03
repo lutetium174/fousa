@@ -8,13 +8,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\EventBus.Rabbit\EventBus.Rabbit.csproj" />
     <ProjectReference Include="..\Messages.Kafka\Messages.Kafka.csproj" />
   </ItemGroup>
   
   <ItemGroup>
+    <PackageReference Include="Foundation.EventBus.Rabbit" Version="1.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="10.0.9"/>
-    <PackageReference Include="Foundation" Version="1.0.0" />
     <PackageReference Include="Foundation.DependencyInjection.Web" Version="1.0.0" />
   </ItemGroup>
 

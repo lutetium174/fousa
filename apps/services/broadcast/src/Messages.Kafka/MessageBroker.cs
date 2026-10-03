@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Confluent.Kafka;
 using Core;
+using Foundation.EventBus.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

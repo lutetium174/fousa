@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using Core;
+using Messages.Search.Models;
 
 namespace Messages.Search;
 
@@ -353,9 +354,10 @@ public class QueryParser
                     if (sortParts.Length > 0)
                     {
                         if (SortFieldMap.TryGetValue(sortParts[0].Trim(), out var field))
-                            parsed.SortField = field;
-                        if (sortParts.Length > 1 && SortDirectionMap.TryGetValue(sortParts[1].Trim(), out var direction))
-                            parsed.SortDirection = direction;
+                        {
+                            var direction = sortParts.Length > 1 && SortDirectionMap.TryGetValue(sortParts[1].Trim(), out var dir) ? dir : SortDirection.Ascending;
+                            parsed.SortFields.Add((field, direction));
+                        }
                     }
                 }
                 break;

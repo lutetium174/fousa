@@ -1,6 +1,7 @@
 ﻿using Core;
 using Core.Broker;
 using Foundation;
+using Foundation.EventBus.Abstractions;
 using Kafka.LinqToKafka;
 using Messages.Kafka.JsonExtensions;
 using Microsoft.Extensions.Configuration;

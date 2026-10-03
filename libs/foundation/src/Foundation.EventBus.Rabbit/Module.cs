@@ -1,11 +1,10 @@
-﻿using Core;
-using Foundation;
+﻿using Foundation.EventBus.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace EventBus.Rabbit;
+namespace Foundation.EventBus.Rabbit;
 
 public class Module : IModule
 {
