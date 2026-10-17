@@ -1,0 +1,18 @@
+info:
+  name: GET Table Config
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:9000/tables/:tablename
+  params:
+    - name: tablename
+      value: messages-de-DE
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
