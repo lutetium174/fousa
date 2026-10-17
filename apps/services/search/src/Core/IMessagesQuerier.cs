@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Pinotchio;
 
 namespace Core;
 
@@ -11,7 +12,7 @@ public interface IMessagesQuerier
     /// <summary>
     /// The underlying message repository
     /// </summary>
-    IRepository<Message> Repository { get; }
+    IReadRepository<Message> Repository { get; }
 
     /// <summary>
     /// Execute a composed query built via DSL

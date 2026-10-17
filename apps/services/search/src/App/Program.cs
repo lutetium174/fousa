@@ -48,7 +48,7 @@ app.MapGet("/api/messages/search", async (IMessagesQuerier querier, [Required] s
     });
 });
 
-app.MapPost("/api/messages/search", async (IMessagesQuerier querier, SearchRequest request) =>
+app.MapPost("/api/messages/search", async (IMessagesQuerier defaultQuerier, SearchRequest request, IPinotClient pinotClient) =>
 {
     var parsedQuery = new QueryParser().Parse(request.Query);
 
@@ -56,14 +56,24 @@ app.MapPost("/api/messages/search", async (IMessagesQuerier querier, SearchReque
     parsedQuery.Page = request.Page;
     parsedQuery.PageSize = request.PageSize;
 
+    // Create a querier with language-specific table if language is provided
+    var querier = defaultQuerier;
+    if (!string.IsNullOrWhiteSpace(request.Culture))
+    {
+        // Pinot SQL requires hyphenated table names to be quoted (e.g. "messages-de-DE"),
+        // otherwise the query fails with a SQLParsingError
+        var tableName = $"\"messages-{request.Culture}\"";
+        var languageRepo = new PinotRepository<Message>(pinotClient, tableName);
+        querier = new MessagesQuerier(languageRepo);
+    }
+
     // Execute the query
     var results = await querier.SearchAsync(parsedQuery);
-    var totalCount = await querier.CountAsync(parsedQuery);
 
     return Results.Ok(new SearchResponse<Message>
     {
         Results = results,
-        TotalCount = totalCount,
+        TotalCount = results.Count,
         Page = request.Page,
         PageSize = request.PageSize
     });

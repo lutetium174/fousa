@@ -12,4 +12,5 @@ public class SearchRequest
     public int PageSize { get; set; } = 25;
     public List<string>? Include { get; set; }
     public FullTextSearchOptions? FullTextOptions { get; set; }
+    public string? Culture { get; set; }
 }

@@ -10,6 +10,7 @@
       <ProjectReference Include="..\..\Did.Walt.Core\Did.Walt.Core.csproj" />
       <ProjectReference Include="..\..\Did.WaltId.Issuer\Did.WaltId.Issuer.csproj" />
       <ProjectReference Include="..\..\Did.WaltId.Verifier\Did.WaltId.Verifier.csproj" />
+      <ProjectReference Include="..\Did.Walt.Core\Did.Walt.Core.csproj" />
       <ProjectReference Include="..\Engine\Engine.csproj" />
     </ItemGroup>
 

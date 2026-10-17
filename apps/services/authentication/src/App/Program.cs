@@ -67,12 +67,7 @@ app.MapGet("/liveness", ([FromServices] IMediator mediator) =>
 app.MapPost("/api/register", async (
         CreateTemplate request,
         [FromServices] IMediator mediator)
-    =>
-{
-    
-    
-    return await mediator.Send(request);
-});
+    => await mediator.Send(request));
 
 app.MapPost("/api/verifier/register", async (
     [FromBody] string did,

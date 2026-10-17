@@ -1,13 +1,15 @@
+using Pinotchio;
+
 ﻿namespace Core;
 
 /// <summary>
 /// The Message entity that will be returned by queries
 /// </summary>
+[Table("messages")]
 public class Message
 {
     public string Id { get; set; } = string.Empty;
-    public string Subject { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
     public string SenderId { get; set; } = string.Empty;
     public string SenderName { get; set; } = string.Empty;
     public List<string> RecipientIds { get; set; } = new();

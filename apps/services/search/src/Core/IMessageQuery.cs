@@ -19,11 +19,6 @@ public interface IMessageQuery
     List<(Expression<Func<Message, object>> KeySelector, SortDirection Direction)> SortExpressions { get; }
 
     /// <summary>
-    /// Projection selector for transforming results
-    /// </summary>
-    Expression<Func<Message, object>>? Selector { get; }
-
-    /// <summary>
     /// Maximum number of results to return (null for no limit)
     /// </summary>
     int? Limit { get; }

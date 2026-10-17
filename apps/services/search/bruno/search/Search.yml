@@ -1,0 +1,22 @@
+info:
+  name: Search
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5213/api/messages/search
+  body:
+    type: json
+    data: |-
+      {
+        "query": "allo",
+        "culture": "de-DE"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

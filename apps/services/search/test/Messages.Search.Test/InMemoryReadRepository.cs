@@ -1,13 +1,14 @@
 using System.Linq.Expressions;
 using Core;
+using Pinotchio;
 
 namespace Messages.Search.Test;
 
 /// <summary>
-/// In-memory implementation of IRepository for testing and development
+/// In-memory implementation of IReadRepository for testing and development
 /// </summary>
 /// <typeparam name="TEntity">The entity type</typeparam>
-public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : class
+public class InMemoryRepository<TEntity> : IReadRepository<TEntity> where TEntity : class
 {
     private readonly List<TEntity> _entities = new();
     private readonly Dictionary<string, TEntity> _entityById = new();

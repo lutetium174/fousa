@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "sender": "7655d018-fe75-4706-a0db-0769c44fa206",
-        "content": "allo guvner"
+        "content": "wotcher mate"
       }
   auth: inherit
 

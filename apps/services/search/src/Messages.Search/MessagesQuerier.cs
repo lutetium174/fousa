@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Core;
+using Messages.Search.AnalyticalStore;
 using Pinotchio;
 
 namespace Messages.Search;
@@ -12,7 +13,7 @@ namespace Messages.Search;
 public class MessagesQuerier : IMessagesQuerier
 {
     private readonly IReadRepository<Message>? _repository;
-    private readonly Messages.Search.AnalyticalStore.IDataStoreAdaptor<Message>? _adaptor;
+    private readonly IAnalyticalStoreAdaptor<Message>? _adaptor;
 
     /// <summary>
     /// Creates a new MessagesQuerier with optional repository and analytical store adaptor
@@ -21,7 +22,7 @@ public class MessagesQuerier : IMessagesQuerier
     /// <param name="adaptor">Optional analytical store adaptor (e.g., for Kafka Pinot)</param>
     public MessagesQuerier(
         IReadRepository<Message>? repository = null,
-        Messages.Search.AnalyticalStore.IDataStoreAdaptor<Message>? adaptor = null)
+        IAnalyticalStoreAdaptor<Message>? adaptor = null)
     {
         _repository = repository;
         _adaptor = adaptor;
@@ -38,8 +39,10 @@ public class MessagesQuerier : IMessagesQuerier
     /// Creates a new MessagesQuerier with an analytical store adaptor
     /// </summary>
     /// <param name="adaptor">The analytical store adaptor</param>
-    public MessagesQuerier(Messages.Search.AnalyticalStore.IDataStoreAdaptor<Message> adaptor) : this(null, adaptor)
+    public MessagesQuerier(IAnalyticalStoreAdaptor<Message> adaptor) : this(null, adaptor)
     { }
+
+    public IReadRepository<Message> Repository => _repository!;
 
     /// <summary>
     /// Execute a composed query built via DSL
@@ -78,7 +81,8 @@ public class MessagesQuerier : IMessagesQuerier
         if (_adaptor != null)
         {
             // Use analytical store adaptor
-            return await _adaptor.ExecuteQueryAsync(predicate, ct);
+            var queryable = new List<Message>().AsQueryable().Where(predicate);
+            return await _adaptor.ExecuteQueryAsync(queryable, ct);
         }
         else if (_repository != null)
         {
@@ -189,8 +193,7 @@ public class MessagesQuerier : IMessagesQuerier
         // Count with query filter
         if (_adaptor != null)
         {
-            var queryable = query.ApplyTo(new List<Message>().AsQueryable());
-            return await _adaptor.CountAsync(queryable, ct);
+            return await _adaptor.CountAsync(query.Predicate, ct);
         }
         else if (_repository != null)
         {
@@ -251,8 +254,7 @@ public class MessagesQuerier : IMessagesQuerier
         // Check with query filter
         if (_adaptor != null)
         {
-            var queryable = query.ApplyTo(new List<Message>().AsQueryable());
-            return await _adaptor.AnyAsync(queryable, ct);
+            return await _adaptor.AnyAsync(query.Predicate, ct);
         }
         else if (_repository != null)
         {
@@ -296,9 +298,17 @@ public class MessagesQuerier : IMessagesQuerier
     {
         if (_adaptor != null)
         {
-            return predicate != null 
-                ? await _adaptor.ExecuteQueryAsync(predicate, ct)
-                : await _adaptor.ExecuteQueryAsync("*", ct);
+            if (predicate != null)
+            {
+                var queryable = new List<Message>().AsQueryable().Where(predicate);
+                return await _adaptor.ExecuteQueryAsync(queryable, ct);
+            }
+            else
+            {
+                // Get all - use a queryable with no predicate
+                var queryable = new List<Message>().AsQueryable();
+                return await _adaptor.ExecuteQueryAsync(queryable, ct);
+            }
         }
         else if (_repository != null)
         {

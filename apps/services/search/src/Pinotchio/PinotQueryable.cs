@@ -3,19 +3,19 @@ using System.Linq.Expressions;
 
 namespace Pinotchio;
 
-public class Queryable<T> : IQueryable<T>
+public class PinotQueryable<T> : IQueryable<T>
 {
     public Expression Expression { get; }
     public Type ElementType => typeof(T);
     public IQueryProvider Provider { get; }
 
-    public Queryable(IQueryProvider provider)
+    public PinotQueryable(IQueryProvider provider)
     {
         Provider = provider;
         Expression = Expression.Constant(this);
     }
 
-    public Queryable(IQueryProvider provider, Expression expression)
+    public PinotQueryable(IQueryProvider provider, Expression expression)
     {
         Provider = provider;
         Expression = expression;

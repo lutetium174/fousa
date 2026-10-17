@@ -2,9 +2,10 @@
 
 public enum MessageSortField
 {
+    None,
     CreatedAt,
     ModifiedAt,
     Sender,
-    Subject,
+    Content,
     Importance
 }

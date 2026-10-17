@@ -6,7 +6,7 @@
   let authenticated = false;
   let loading = false;
   let error = '';
-  let baseUrl = "http://localhost:5000";
+  let baseUrl = "https://localhost:5001";
 
   async function startLogin() {
     loading = true;
@@ -104,6 +104,6 @@
   {/if}
 
   {#if authenticated}
-    <div class="success">🎉 You’re logged in with Verified ID</div>
+    <div class="success">You’re logged in with Verified ID</div>
   {/if}
 </div>

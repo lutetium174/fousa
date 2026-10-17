@@ -17,6 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Did.WaltId.Issuer\Did.WaltId.Issuer.csproj" />
+    <ProjectReference Include="..\Did.WaltId.Verifier\Did.WaltId.Verifier.csproj" />
     <ProjectReference Include="..\Engine\Engine.csproj" />
     <ProjectReference Include="..\Did.WaltId.Wallet\Did.WaltId.Wallet.csproj" />
   </ItemGroup>

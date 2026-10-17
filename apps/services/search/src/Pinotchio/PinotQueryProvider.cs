@@ -1,57 +1,93 @@
 ﻿using System.Linq.Expressions;
-using Messages.Search;
-using Messages.Search.Mappers;
+using Pinotchio.Mappers;
 
 namespace Pinotchio;
 
-internal class QueryProvider(IPinotClient client) : IQueryProvider
+internal sealed class PinotQueryProvider(
+    IPinotClient client,
+    string tableName,
+    bool supportOrderBy = false) : IQueryProvider
 {
     public IQueryable CreateQuery(Expression expression)
-    {
-        var elementType = expression.Type.GetGenericArguments().First();
-        var queryableType = typeof(PinotQueryable<>).MakeGenericType(elementType);
-        return (IQueryable)Activator.CreateInstance(queryableType, this, expression)!;
-    }
+        => (IQueryable)Activator.CreateInstance(typeof(PinotQueryable<>)
+            .MakeGenericType(expression.Type.GetGenericArguments().First()), this, expression)!;
 
     public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
-        => new PinotQueryable<TElement>(this, expression);
+    {
+        var queryable = new PinotQueryable<TElement>(this, expression);
 
-    public object Execute(Expression expression)
-        => Execute<object>(expression);
+        return expression is MethodCallExpression
+        {
+            Method.Name:
+            "OrderBy" or
+            "OrderByDescending" or
+            "ThenBy" or
+            "ThenByDescending"
+        }
+            ? new OrderedPinotQueryable<TElement>(queryable)
+            : queryable;
+    }
+
+    public object Execute(Expression expression) => Execute<object>(expression);
 
     public TResult Execute<TResult>(Expression expression)
     {
-        var sql = ExpressionTranslator.Translate(expression);
-        var json = client.ExecuteSql(sql);
+        var result = client
+            .ExecuteSql(ExpressionTranslator.Translate(expression, tableName, supportOrderBy), CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
 
-        return IsEnumerableButNotString(typeof(TResult), out var elementType)
-            ? (TResult)typeof(ResultMapper)
-                .GetMethod(nameof(ResultMapper.Map))!
-                .MakeGenericMethod(elementType)
-                .Invoke(null, [json])!
-            : ScalarMapper.Map<TResult>(json);
+        if (!IsEnumerableButNotString(typeof(TResult), out var elementType))
+            return ScalarMapper.Map<TResult>(result);
+
+        return (TResult)typeof(ResultMapper)
+            .GetMethod("Map")!
+            .MakeGenericMethod(elementType)
+            .Invoke(null, [result])!;
     }
 
-    private static bool IsEnumerableButNotString(Type type, out Type elementType)
+    public Task<object> ExecuteAsync(Expression expression,
+        CancellationToken cancellationToken = default)
     {
-        elementType = null!;
+        return ExecuteAsync<object>(expression, cancellationToken);
+    }
+
+    public async Task<TResult> ExecuteAsync<TResult>(
+        Expression expression,
+        CancellationToken cancellationToken = default)
+    {
+        var sql = ExpressionTranslator.Translate(expression, tableName, supportOrderBy);
+        var json = await client.ExecuteSql(sql, cancellationToken).ConfigureAwait(false);
+
+        if (!IsEnumerableButNotString(typeof(TResult), out var elementType))
+            return ScalarMapper.Map<TResult>(json);
+
+        return (TResult)typeof(ResultMapper)
+            .GetMethod("Map")!
+            .MakeGenericMethod(elementType).Invoke(null, [json])!;
+    }
+
+    private static bool IsEnumerableButNotString(Type type, out Type? elementType)
+    {
+        elementType = null;
 
         if (type == typeof(string))
             return false;
 
-        if (type.IsGenericType &&
-            typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+        if (type.IsGenericType && typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
         {
             elementType = type.GetGenericArguments()[0];
             return true;
         }
 
-        var enumerable = type.GetInterfaces()
-            .FirstOrDefault(i => i.IsGenericType &&
-                                 i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        var type1 = type
+            .GetInterfaces()
+            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
-        if (enumerable == null) return false;
-        elementType = enumerable.GetGenericArguments()[0];
+        if (type1 == null)
+            return false;
+
+        elementType = type1.GetGenericArguments()[0];
         return true;
     }
 }

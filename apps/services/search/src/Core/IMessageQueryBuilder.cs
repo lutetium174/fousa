@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using Pinotchio;
 
 namespace Core;
 
@@ -239,7 +240,7 @@ public interface IMessageQueryBuilder
     /// Sets the repository to use for query execution
     /// </summary>
     /// <param name="repository">The repository to use</param>
-    IMessageQueryBuilder ForRepository(IRepository<Message> repository);
+    IMessageQueryBuilder ForRepository(IReadRepository<Message> repository);
 
     /// <summary>
     /// Sets the analytical store adaptor for query translation

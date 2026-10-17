@@ -1,8 +1,8 @@
 ﻿using System.Text.Json;
 
-namespace Messages.Search.Mappers;
+namespace Pinotchio.Mappers;
 
-public static class PinotScalarMapper
+public static class ScalarMapper
 {
     public static T Map<T>(string json)
     {

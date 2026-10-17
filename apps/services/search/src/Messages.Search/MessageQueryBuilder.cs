@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using Core;
+using Pinotchio;
 
 namespace Messages.Search;
 
@@ -14,28 +15,27 @@ public static class MessageQueryBuilderExtensions
     /// </summary>
     public static async Task<IReadOnlyList<Message>> ExecuteAsync(
         this IMessageQueryBuilder builder,
-        IRepository<Message> repository,
+        IReadRepository<Message> repository,
         CancellationToken ct = default)
     {
         var query = builder.Build();
         var queryable = query.ApplyTo(repository.Query());
 
         // For in-memory collections, execute immediately
-        if (queryable is IEnumerable<Message> enumerable)
-        {
-            await Task.CompletedTask;
-            return enumerable.ToList().AsReadOnly();
-        }
+        if (queryable is not IEnumerable<Message> enumerable)
+            return await Task.FromResult(queryable.ToList().AsReadOnly());
+        
+        await Task.CompletedTask;
+        return enumerable.ToList().AsReadOnly();
 
         // For RDBMS, materialize the results
-        return await Task.FromResult(queryable.ToList().AsReadOnly());
     }
 
     /// <summary>
     /// Translates the query to the specified analytical store's query language
     /// </summary>
     public static string TranslateTo<TAdaptor>(this IMessageQueryBuilder builder, TAdaptor adaptor)
-        where TAdaptor : Messages.Search.AnalyticalStore.IAnalyticalStoreAdaptor<Message>
+        where TAdaptor : AnalyticalStore.IAnalyticalStoreAdaptor<Message>
         => builder.Build() is not LinqMessageQuery linqQuery
             ? string.Empty
             : adaptor.TranslateQuery(linqQuery.ApplyTo(new List<Message>().AsQueryable()));
@@ -48,39 +48,31 @@ public static class MessageQueryBuilderExtensions
 public class MessageQueryBuilder : IMessageQueryBuilder
 {
     private readonly LinqMessageQuery _query = new();
-    private List<string> _includes = new();
-    private List<Expression<Func<Message, bool>>> _currentContext = new();
-    private bool _isNegatedContext = false;
-
-    public MessageQueryBuilder()
-    {
-    }
+    private readonly List<string> _includes = [];
+    private readonly List<Expression<Func<Message, bool>>> _currentContext = [];
+    private bool _isNegatedContext;
 
     // === Content Filtering ===
 
     public IMessageQueryBuilder WithText(string exactText)
     {
-        var predicate = CreateTextPredicate(m =>
-            m.Subject.Equals(exactText, StringComparison.OrdinalIgnoreCase) ||
-            m.Body.Equals(exactText, StringComparison.OrdinalIgnoreCase));
+        var predicate = CreateTextPredicate(m 
+            => m.Content.Equals(exactText, StringComparison.OrdinalIgnoreCase));
         AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder ContainingText(string text)
     {
-        var predicate = CreateTextPredicate(m =>
-            m.Subject.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-            m.Body.Contains(text, StringComparison.OrdinalIgnoreCase));
+        var predicate = CreateTextPredicate(m 
+            => m.Content.Contains(text, StringComparison.OrdinalIgnoreCase));
         AddPredicate(predicate);
         return this;
     }
 
     public IMessageQueryBuilder MatchingPattern(Regex pattern)
     {
-        var predicate = CreateTextPredicate(m =>
-            pattern.IsMatch(m.Subject) || pattern.IsMatch(m.Body));
-        AddPredicate(predicate);
+        AddPredicate(CreateTextPredicate(m => pattern.IsMatch(m.Content)));
         return this;
     }
 
@@ -502,7 +494,7 @@ public class MessageQueryBuilder : IMessageQueryBuilder
         return clone;
     }
 
-    public IMessageQueryBuilder ForRepository(IRepository<Message> repository)
+    public IMessageQueryBuilder ForRepository(IReadRepository<Message> repository)
     {
         // Note: The repository is not stored in the builder itself
         // This method is here for interface completeness
@@ -541,20 +533,19 @@ public class MessageQueryBuilder : IMessageQueryBuilder
         }
     }
 
-    private Expression<Func<Message, bool>> CreateTextPredicate(Expression<Func<Message, bool>> basePredicate)
-    {
-        return basePredicate;
-    }
-
-    private Expression<Func<Message, object>> GetSortExpression(MessageSortField field)
+    private static Expression<Func<Message, bool>> CreateTextPredicate(Expression<Func<Message, bool>> basePredicate)
+        => basePredicate;
+    
+    private static Expression<Func<Message, object>> GetSortExpression(MessageSortField field)
     {
         return field switch
         {
             MessageSortField.CreatedAt => m => m.CreatedAt,
             MessageSortField.ModifiedAt => m => m.ModifiedAt,
             MessageSortField.Sender => m => m.SenderName,
-            MessageSortField.Subject => m => m.Subject,
+            MessageSortField.Content => m => m.Content,
             MessageSortField.Importance => m => m.ReactionCount,
+            
             _ => m => m.CreatedAt
         };
     }

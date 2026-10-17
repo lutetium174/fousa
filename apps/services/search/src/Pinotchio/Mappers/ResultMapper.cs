@@ -1,9 +1,9 @@
 ﻿using System.Reflection;
 using System.Text.Json;
 
-namespace Messages.Search.Mappers;
+namespace Pinotchio.Mappers;
 
-public static class PinotResultMapper
+public static class ResultMapper
 {
     public static IEnumerable<T> Map<T>(string json)
     {

@@ -2,5 +2,5 @@
 
 public interface IPinotClient
 {
-    string ExecuteSql(string sql);
+    Task<string> ExecuteSql(string sql, CancellationToken cancellationToken);
 }

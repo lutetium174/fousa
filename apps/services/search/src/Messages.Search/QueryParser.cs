@@ -57,7 +57,7 @@ public class QueryParser
         ["modifiedat"] = MessageSortField.ModifiedAt,
         ["modified"] = MessageSortField.ModifiedAt,
         ["sender"] = MessageSortField.Sender,
-        ["subject"] = MessageSortField.Subject,
+        ["subject"] = MessageSortField.Content,
         ["importance"] = MessageSortField.Importance
     };
 
