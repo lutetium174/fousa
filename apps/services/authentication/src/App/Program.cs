@@ -11,10 +11,6 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration
-    .AddJsonFile("appsettings.json", false, true)
-    .AddEnvironmentVariables();
-
 builder.AddWaltIdOptions();
 
 builder.Services

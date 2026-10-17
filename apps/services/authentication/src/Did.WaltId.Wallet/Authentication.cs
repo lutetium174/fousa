@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Engine;
@@ -22,8 +22,7 @@ internal class Authentication(
 
     public async Task<ChallengeResult> Challenge()
     {
-        var verifierApi = config["Walt:VerifierApi"]!;
-        var callbackUrl = config["Walt:CallbackUrl"]!;
+        var verifierApi = new Uri(config["Walt:VerifierApi:Url"]!);
 
         var state = Guid.NewGuid();
         loginStates.SetState(state, false);
@@ -31,32 +30,28 @@ internal class Authentication(
         var body = new
         {
             flow_type = "cross_device",
-            core = new
+            core_flow = new
             {
-                client_id = "did:web:alliora.pug-bichir.ts.net",
-                redirect_uri = callbackUrl,
-                scope = "openid",
-                presentation_definition = new
+                dcql_query = new
                 {
                     input_descriptors = new[]
                     {
                         new
                         {
                             id = "my-credential",
-                            format = new { jwt_vc = new { alg = new[] { "EdDSA" } } },
-                            constraints = new { fields = Array.Empty<object>() }
+                            format = "jwt_vc_json",
+                            meta = new { type_values = new[] { new[] { "VerifiableCredential" } } }
                         }
                     }
                 }
             }
         };
 
-
         using var client = httpClientFactory.CreateClient("WalletApi");
         var json = JsonSerializer.Serialize(body);
 
         var response = await client.PostAsync(
-            verifierApi,
+            new Uri(verifierApi, "verification-session/create"),
             new StringContent(json, Encoding.UTF8, "application/json")
         );
 
@@ -66,8 +61,8 @@ internal class Authentication(
         using var doc = JsonDocument.Parse(content);
         var root = doc.RootElement;
 
-        var sessionId = root.GetProperty("id").GetString() ?? Guid.Empty.ToString();
-        var authUrl = root.GetProperty("authorizationRequestUrl").GetString() ?? string.Empty;
+        var sessionId = root.GetProperty("sessionId").GetString() ?? Guid.Empty.ToString();
+        var authUrl = root.GetProperty("fullAuthorizationRequestUrl").GetString() ?? string.Empty;
 
         return new(state, Guid.Parse(sessionId), authUrl);
     }
