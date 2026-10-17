@@ -14,8 +14,7 @@
     "retentionTimeValue": "365",
     "completionConfig": null,
     "crypterClassName": null,
-    "peerSegmentDownloadScheme": null,
-    "schemaName": "messages"
+    "peerSegmentDownloadScheme": null
   },
   "tableIndexConfig": {
     "loadMode": "MMAP",
@@ -65,7 +64,13 @@
   "query": {
     "timeoutMs": null
   },
-  "fieldConfigList": null,
+  "fieldConfigList": [
+    {
+      "name": "Content",
+      "encodingType": "RAW",
+      "indexTypes": ["TEXT"]
+    }
+  ],
   "upsertConfig": null,
   "tierConfigs": null
 }

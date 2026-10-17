@@ -19,6 +19,7 @@
   },
   "tableIndexConfig": {
     "loadMode": "MMAP",
+    "textIndexColumns": ["Content"],
     "invertedIndexColumns": [],
     "createInvertedIndexDuringSegmentGeneration": false,
     "rangeIndexColumns": [],
@@ -65,7 +66,13 @@
   "query": {
     "timeoutMs": null
   },
-  "fieldConfigList": null,
+  "fieldConfigList": [
+    {
+      "name": "Content",
+      "encodingType": "RAW",
+      "indexTypes": ["TEXT"]
+    }
+  ],
   "upsertConfig": null,
   "tierConfigs": null
 }
