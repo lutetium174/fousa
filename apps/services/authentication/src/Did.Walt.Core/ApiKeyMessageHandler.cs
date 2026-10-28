@@ -2,11 +2,10 @@
 
 public class ApiKeyMessageHandler(string apiKey) : DelegatingHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request,
-        CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        request.Headers.Authorization = new("Bearer", apiKey);
+        if (!string.IsNullOrEmpty(apiKey))
+            request.Headers.Authorization = new("Bearer", apiKey);
         return base.SendAsync(request, cancellationToken);
     }
 }

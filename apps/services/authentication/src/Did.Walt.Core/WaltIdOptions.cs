@@ -6,6 +6,8 @@ public class WaltIdOptions
     public ApiOptions VerifierApi { get; set; }
     public ApiOptions WalletApi { get; init; } 
     public Uri CallbackUrl { get; init; }
+    public string WalletEmail { get; init; } = "";
+    public string WalletPassword { get; init; } = "";
 }
 
 public class ApiOptions

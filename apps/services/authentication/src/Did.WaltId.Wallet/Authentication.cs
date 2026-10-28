@@ -34,7 +34,7 @@ internal class Authentication(
             {
                 dcql_query = new
                 {
-                    input_descriptors = new[]
+                    credentials = new object[]
                     {
                         new
                         {

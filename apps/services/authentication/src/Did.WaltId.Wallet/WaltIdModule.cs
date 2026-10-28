@@ -9,5 +9,6 @@ public class WaltIdModule : IModule
     public IServiceCollection Register(IServiceCollection services, IConfiguration configuration)
         => services
             .AddTransient<IAuthentication, Authentication>()
+            .AddTransient<WalletHolder>()
             .AddSingleton<ILoginState, LoginState>();
 }

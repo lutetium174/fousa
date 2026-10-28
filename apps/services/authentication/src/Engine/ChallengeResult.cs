@@ -1,3 +1,3 @@
 ﻿namespace Engine;
 
-public record ChallengeResult(Guid State, Guid SessionId, string QrCode);
+public record ChallengeResult(Guid State, Guid SessionId, string RequestUrl);

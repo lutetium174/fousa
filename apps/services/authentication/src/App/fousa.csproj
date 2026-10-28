@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>c602d0fe-52ef-4728-8b7c-8db93f3c8c45</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Did.Microsoft.Authenticator\Did.Microsoft.Authenticator.csproj" />
     <ProjectReference Include="..\Did.WaltId.Issuer\Did.WaltId.Issuer.csproj" />
     <ProjectReference Include="..\Did.WaltId.Verifier\Did.WaltId.Verifier.csproj" />
     <ProjectReference Include="..\Engine\Engine.csproj" />

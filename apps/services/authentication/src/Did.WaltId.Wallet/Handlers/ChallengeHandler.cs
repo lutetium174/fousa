@@ -64,4 +64,4 @@ public class ChallengeHandler(
 
 public record AuthenticationChallenge : IRequest<ChallengeAccepted> { }
 
-public record ChallengeAccepted(Guid State, Guid SessionId, string QrCode);
+public record ChallengeAccepted(Guid State, Guid SessionId, string RequestUrl);

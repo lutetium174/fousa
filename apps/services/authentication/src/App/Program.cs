@@ -28,6 +28,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
+                "https://alliora.pug-bichir.ts.net:5001",
                 "http://localhost:5173",
                 "https://localhost:5173",
                 "http://localhost:3000",
@@ -48,7 +49,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
 
@@ -60,12 +61,12 @@ app.MapGet("/liveness", ([FromServices] IMediator mediator) =>
     return Results.NoContent();
 });
 
-app.MapPost("/api/register", async (
+app.MapPost("/api/auth/register", async (
         CreateTemplate request,
         [FromServices] IMediator mediator)
     => await mediator.Send(request));
 
-app.MapPost("/api/verifier/register", async (
+app.MapPost("/api/auth/verifier/register", async (
     [FromBody] string did,
     [FromServices] IAuthentication authentication) =>
 {
@@ -73,10 +74,10 @@ app.MapPost("/api/verifier/register", async (
     return Results.NoContent();
 });
 
-app.MapPost("/api/verifier/request", async ([FromServices] IAuthentication authentication)
+app.MapPost("/api/auth/verifier/request", async ([FromServices] IAuthentication authentication)
     => Results.Ok(await authentication.Challenge()));
 
-app.MapPost("/api/verifier/callback", async (
+app.MapPost("/api/auth/verifier/callback", async (
     HttpRequest request,
     [FromServices] IAuthentication authentication) =>
 {
@@ -84,9 +85,28 @@ app.MapPost("/api/verifier/callback", async (
     return Results.NoContent();
 });
 
-app.MapGet("/api/verifier/status/{state}", (string state, [FromServices] IAuthentication authentication)
+app.MapPost("/api/auth/wallet/did", async ([FromServices] WalletHolder wallet)
+    => Results.Ok(await wallet.CreateDid()));
+
+app.MapGet("/api/auth/wallet/credentials", async ([FromServices] WalletHolder wallet)
+    => Results.Ok(await wallet.ListCredentials()));
+
+app.MapPost("/api/auth/wallet/receive", async (
+        [FromBody] CredentialOfferUrl offer,
+        [FromServices] WalletHolder wallet)
+    => Results.Ok(await wallet.Receive(offer.OfferUrl)));
+
+app.MapPost("/api/auth/wallet/present", async (
+        [FromBody] PresentationRequestUrl presentation,
+        [FromServices] WalletHolder wallet)
+    => Results.Ok(await wallet.Present(presentation.RequestUrl)));
+
+app.MapGet("/api/auth/verifier/status/{state}", (string state, [FromServices] IAuthentication authentication)
     => Guid.TryParse(state, out var stateGuid)
         ? Results.Ok(new { authenticated = authentication.Verify(stateGuid) })
         : Results.BadRequest(new { Reason = "Invalid state parameter" }));
 
 app.Run();
+
+public record CredentialOfferUrl(string OfferUrl);
+public record PresentationRequestUrl(string RequestUrl);
